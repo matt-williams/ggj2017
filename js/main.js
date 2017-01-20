@@ -19,7 +19,7 @@ function init() {
   var ambientLight = new THREE.AmbientLight(0x808080);
   scene.add(ambientLight);
 
-  geometry = new THREE.PlaneBufferGeometry(10, 10, 50, 50);
+  geometry = new THREE.PlaneBufferGeometry(20, 20, 200, 200);
   geometry.rotateX(-Math.PI / 2);
   var material = new THREE.MeshBasicMaterial({color: 0xffff00, wireframe: true});
   mesh = new THREE.Mesh(geometry, material);
@@ -38,7 +38,7 @@ function animate() {
   t++;
   var vertices = geometry.attributes.position.array;
   for (var i = 0, j = 0, l = vertices.length; i < l; i ++, j += 3) {
-    vertices[j + 1] = Math.sin(((i % 50) + Math.floor(i / 50) + t) * 0.5);
+    vertices[j + 1] = Math.cos(((i % 201) + Math.floor(i / 201) + t) * 0.1);
   }
   geometry.attributes.position.needsUpdate = true;
 
