@@ -104,8 +104,8 @@ function animate() {
   field = newField;
 
   var normals = geometry.attributes.normal.array;
-  for (var z = 1; z < HEIGHT; z++) {
-    for (var x = 1; x < WIDTH; x++) {
+  for (var z = 1; z < HEIGHT - 1; z++) {
+    for (var x = 1; x < WIDTH - 1; x++) {
       var vector1 = [-2, (field[(x - 1) + z * WIDTH] - field[(x + 1) + z * WIDTH]), 0];
       var vector2 = [0, (field[x + (z - 1) * WIDTH] - field[x + (z + 1) * WIDTH]), 2];
       normals[0 + (x * 3) + (z * 3 * WIDTH)] = (vector1[1] * vector2[2]) - (vector1[2] * vector2[1]);
