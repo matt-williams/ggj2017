@@ -19,7 +19,6 @@ mc.on("tap press", function(ev) {
     touchCoordX = ev.center.x / touch.offsetWidth;
     touchCoordY = ev.center.y / touch.offsetHeight;
 //    var timeElapsed = ev.deltaTime;
-    animate();
 });
 
 init();
