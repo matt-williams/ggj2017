@@ -4,6 +4,7 @@ var geometry, material, mesh;
 var t = 0;
 var WIDTH = 200;
 var HEIGHT = 200;
+var velocity = new Float64Array(WIDTH * HEIGHT);
 var fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
 var field = fields[0];
 init();
@@ -39,11 +40,15 @@ function init() {
 function animate() {
   requestAnimationFrame(animate);
 
+  velocity[WIDTH / 2 + WIDTH] += Math.sin(t * 0.3);
   t++;
   var newField = fields[1];
-  for (var z = 0; z < HEIGHT; z++) {
-    for (var x = 0; x < WIDTH; x++) {
-      newField[x + z * WIDTH] = Math.sin((x + z + t) * 0.1);
+  for (var z = 1; z < HEIGHT - 1; z++) {
+    for (var x = 1; x < WIDTH - 1; x++) {
+      var height = field[x + z * WIDTH];
+      var average = (field[x + (z - 1) * WIDTH] + field[x + (z + 1) * WIDTH] + field[x - 1 + z * WIDTH] + field[x + 1 + z * WIDTH]) / 4;
+      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * 2) * 0.99;
+      newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
     }
   }
   fields[0] = newField;
