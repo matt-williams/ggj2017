@@ -47,7 +47,7 @@ function animate() {
     }
   }
   fields[0] = newField;
-  field[0] = field;
+  fields[1] = field;
   field = newField;
 
   var vertices = geometry.attributes.position.array;
