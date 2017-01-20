@@ -1,5 +1,6 @@
 var scene, camera, renderer;
 var geometry, material, mesh;
+var pointLight;
 
 var t = 0;
 var WIDTH = 200;
@@ -17,16 +18,13 @@ function init() {
   camera.rotation.x = -Math.PI / 2;
   camera.position.set(0, 6, 0);
 
-  var directionalLight = new THREE.DirectionalLight(0x7f7f7f, 2);
-  directionalLight.position.set(0, 1, 0);
-  scene.add(directionalLight);
-
-  var ambientLight = new THREE.AmbientLight(0x808080);
-  scene.add(ambientLight);
+  pointLight = new THREE.PointLight(0xffffff, 1, 100);
+  pointLight.position.set(-10, 0, -5);
+  scene.add(pointLight);
 
   geometry = new THREE.PlaneBufferGeometry(20, 20, WIDTH - 1, HEIGHT - 1);
   geometry.rotateX(-Math.PI / 2);
-  var material = new THREE.MeshBasicMaterial({color: 0x007fff, wireframe: true});
+  var material = new THREE.MeshPhongMaterial({color: 0x00ddddd, shininess: 75});
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(0, -10, 0);
   scene.add(mesh);
@@ -40,7 +38,11 @@ function init() {
 function animate() {
   requestAnimationFrame(animate);
 
-  velocity[WIDTH / 2 + WIDTH] += Math.sin(t * 0.3);
+  velocity[WIDTH / 2 +  2 * WIDTH] += Math.sin(t * 0.3);
+  velocity[-1 + WIDTH / 2 + 2 * WIDTH] += 0.5 * Math.sin(t * 0.3);
+  velocity[1 + WIDTH / 2 + 2 * WIDTH] += 0.5 * Math.sin(t * 0.3);
+  velocity[WIDTH / 2 + WIDTH] += 0.5 * Math.sin(t * 0.3);
+  velocity[WIDTH / 2 + 3 * WIDTH] += 0.5 * Math.sin(t * 0.3);
   t++;
   var newField = fields[1];
   for (var z = 1; z < HEIGHT - 1; z++) {
@@ -55,11 +57,27 @@ function animate() {
   fields[1] = field;
   field = newField;
 
+  var normals = geometry.attributes.normal.array;
+  for (var z = 1; z < HEIGHT; z++) {
+    for (var x = 1; x < WIDTH; x++) {
+      var vector1 = [-2, (field[(x - 1) + z * WIDTH] - field[(x + 1) + z * WIDTH]), 0];
+      var vector2 = [0, (field[x + (z - 1) * WIDTH] - field[x + (z + 1) * WIDTH]), 2];
+      normals[0 + (x * 3) + (z * 3 * WIDTH)] = (vector1[1] * vector2[2]) - (vector1[2] * vector2[1]);
+      normals[1 + (x * 3) + (z * 3 * WIDTH)] = (vector1[2] * vector2[0]) - (vector1[0] * vector2[2]);
+      normals[2 + (x * 3) + (z * 3 * WIDTH)] = (vector1[0] * vector2[1]) - (vector1[1] * vector2[0]);
+    }
+  }
+  geometry.attributes.normal.needsUpdate = true;
+
   var vertices = geometry.attributes.position.array;
   for (var i = 0, j = 0, l = vertices.length; i < l; i ++, j += 3) {
     vertices[j + 1] = field[i];
   }
   geometry.attributes.position.needsUpdate = true;
+
+  if (pointLight != undefined) {
+    pointLight.position.set(-10 * Math.cos(0.01 * t), 0, -7 + 2 * Math.cos(0.02 * t));
+  }
 
   renderer.render(scene, camera);
 }
