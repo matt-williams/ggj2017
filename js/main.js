@@ -28,7 +28,9 @@ animate();
 function init() {
   scene = new THREE.Scene();
 
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+  var scaleX = (window.innerWidth > window.innerHeight) ? window.innerWidth / window.innerHeight : 1;
+  var scaleY = (window.innerHeight > window.innerWight) ? window.innerHeight / window.innerWidth : 1;
+  camera = new THREE.OrthographicCamera(-11 * scaleX, 11 * scaleX, 11 * scaleY, -11 * scaleY, 1, 21);
   camera.rotation.x = -Math.PI / 2;
   camera.position.set(0, 5, 0);
 
