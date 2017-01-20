@@ -2,6 +2,10 @@ var scene, camera, renderer;
 var geometry, material, mesh;
 
 var t = 0;
+var WIDTH = 200;
+var HEIGHT = 200;
+var fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
+var field = fields[0];
 init();
 animate();
 
@@ -19,7 +23,7 @@ function init() {
   var ambientLight = new THREE.AmbientLight(0x808080);
   scene.add(ambientLight);
 
-  geometry = new THREE.PlaneBufferGeometry(20, 20, 200, 200);
+  geometry = new THREE.PlaneBufferGeometry(20, 20, WIDTH - 1, HEIGHT - 1);
   geometry.rotateX(-Math.PI / 2);
   var material = new THREE.MeshBasicMaterial({color: 0x007fff, wireframe: true});
   mesh = new THREE.Mesh(geometry, material);
@@ -36,9 +40,19 @@ function animate() {
   requestAnimationFrame(animate);
 
   t++;
+  var newField = fields[1];
+  for (var z = 0; z < HEIGHT; z++) {
+    for (var x = 0; x < WIDTH; x++) {
+      newField[x + z * WIDTH] = Math.sin((x + z + t) * 0.1);
+    }
+  }
+  fields[0] = newField;
+  field[0] = field;
+  field = newField;
+
   var vertices = geometry.attributes.position.array;
   for (var i = 0, j = 0, l = vertices.length; i < l; i ++, j += 3) {
-    vertices[j + 1] = Math.cos(((i % 201) + Math.floor(i / 201) + t) * 0.1);
+    vertices[j + 1] = field[i];
   }
   geometry.attributes.position.needsUpdate = true;
 
