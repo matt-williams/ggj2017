@@ -21,7 +21,7 @@ function init() {
 
   geometry = new THREE.PlaneBufferGeometry(20, 20, 200, 200);
   geometry.rotateX(-Math.PI / 2);
-  var material = new THREE.MeshBasicMaterial({color: 0xffff00, wireframe: true});
+  var material = new THREE.MeshBasicMaterial({color: 0x007fff, wireframe: true});
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(0, -10, 0);
   scene.add(mesh);
