@@ -7,6 +7,20 @@ var HEIGHT = 200;
 var velocity = new Float64Array(WIDTH * HEIGHT);
 var fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
 var field = fields[0];
+
+var touch = document.getElementById("container");
+var mc = new Hammer(touch);
+var touchCoordX = 0;
+var touchCoordY = 0;
+
+mc.on("tap press", function(ev) {
+    console.log(ev.type + " gesture detected.");
+    touchCoordX = ev.center.x / touch.offsetWidth;
+    touchCoordY = ev.center.y / touch.offsetHeight;
+//    var timeElapsed = ev.deltaTime;
+    animate();
+});
+
 init();
 animate();
 
@@ -40,7 +54,8 @@ function init() {
 function animate() {
   requestAnimationFrame(animate);
 
-  velocity[WIDTH / 2 + WIDTH] += Math.sin(t * 0.3);
+  velocity[Math.floor(touchCoordX * WIDTH) + Math.floor(touchCoordY * HEIGHT) * WIDTH] += Math.sin(t * 0.3);
+  
   t++;
   var newField = fields[1];
   for (var z = 1; z < HEIGHT - 1; z++) {
