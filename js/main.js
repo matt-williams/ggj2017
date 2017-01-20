@@ -5,6 +5,7 @@ var pointLight;
 var t = 0;
 var WIDTH = 200;
 var HEIGHT = 200;
+var DAMPING = 0.999;
 var velocity = new Float64Array(WIDTH * HEIGHT);
 var fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
 var field = fields[0];
@@ -29,7 +30,7 @@ function init() {
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
   camera.rotation.x = -Math.PI / 2;
-  camera.position.set(0, 6, 0);
+  camera.position.set(0, 5, 0);
 
   pointLight = new THREE.PointLight(0xffffff, 1, 100);
   pointLight.position.set(-10, 0, -5);
@@ -51,18 +52,50 @@ function init() {
 function animate() {
   requestAnimationFrame(animate);
 
-  velocity[Math.floor(touchCoordX * WIDTH) + Math.floor(touchCoordY * HEIGHT) * WIDTH] += Math.sin(t * 0.3);
-  velocity[Math.floor(-1 + touchCoordX * WIDTH) + Math.floor(touchCoordY * HEIGHT) * WIDTH] += 0.5 * Math.sin(t * 0.3);
-  velocity[Math.floor(1 + touchCoordX * WIDTH) + Math.floor(touchCoordY * HEIGHT) * WIDTH] += 0.5 * Math.sin(t * 0.3);
-  velocity[Math.floor(touchCoordX * WIDTH) + Math.floor(-1 + touchCoordY * HEIGHT) * WIDTH] += 0.5 * Math.sin(t * 0.3);
-  velocity[Math.floor(touchCoordX * WIDTH) + Math.floor(1 + touchCoordY * HEIGHT) * WIDTH] += 0.5 * Math.sin(t * 0.3);
+  var midX = Math.floor(touchCoordX * WIDTH);
+  var midZ = Math.floor(touchCoordY * HEIGHT);
+  for (var z = -5; z <= 5; z++) {
+    for (var x = -5; x <= 5; x++) {
+      if ((x + midX > 0) && (x + midX < WIDTH) && (z + midZ > 0) && (z + midZ < HEIGHT)) {
+        velocity[x + midX + (z + midZ) * WIDTH] += 0.3 * Math.exp((-x*x-z*z)/2) * Math.sin(t * 0.15);
+      }
+    }
+  }
   t++;
   var newField = fields[1];
+  for (var z = 0; z < HEIGHT; z += HEIGHT - 1) {
+    for (var x = 0; x < WIDTH; x++) {
+      var height = field[x + z * WIDTH];
+      var average = 0;
+      var denominator = 0;
+      if (z > 0) { average += field[x + (z - 1) * WIDTH]; denominator++; }
+      if (z < HEIGHT - 1) { average += field[x + (z + 1) * WIDTH]; denominator++; }
+      if (x > 0) { average += field[x - 1 + z * WIDTH]; denominator++; }
+      if (x < WIDTH - 1) { average += field[x + 1 + z * WIDTH]; denominator++; }
+      average = average / denominator;
+      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * denominator / 2) * DAMPING;
+      newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
+    }
+  }
+  for (var x = 0; x < WIDTH; x += WIDTH - 1) {
+    for (var z = 1; z < HEIGHT - 1; z++) {
+      var height = field[x + z * WIDTH];
+      var average = 0;
+      var denominator = 0;
+      if (z > 0) { average += field[x + (z - 1) * WIDTH]; denominator++; }
+      if (z < HEIGHT - 1) { average += field[x + (z + 1) * WIDTH]; denominator++; }
+      if (x > 0) { average += field[x - 1 + z * WIDTH]; denominator++; }
+      if (x < WIDTH - 1) { average += field[x + 1 + z * WIDTH]; denominator++; }
+      average = average / denominator;
+      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * denominator / 2) * DAMPING;
+      newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
+    }
+  }
   for (var z = 1; z < HEIGHT - 1; z++) {
     for (var x = 1; x < WIDTH - 1; x++) {
       var height = field[x + z * WIDTH];
       var average = (field[x + (z - 1) * WIDTH] + field[x + (z + 1) * WIDTH] + field[x - 1 + z * WIDTH] + field[x + 1 + z * WIDTH]) / 4;
-      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * 2) * 0.99;
+      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * 2) * DAMPING;
       newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
     }
   }
