@@ -196,7 +196,7 @@ function checkBuoyStatus(buoy, index, buoyY) {
 
 // Initialize, load and animate the first scene
 init();
-loadScene(2);
+loadScene(0);
 animate();
 
 // Initialize aspects of the game that persist across scenes

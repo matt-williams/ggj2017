@@ -31,8 +31,8 @@ var maps = [
     scene: 3,
     size: {dx: 300, dz: 100},
     barriers: [
-      {x: 50, z: 0, dx: 250, dz: 25},
-      {x: 50, z: 75, dx: 250, dz: 25}
+      {x: 50, z: 0, dx: 250, dz: 40},
+      {x: 50, z: 60, dx: 250, dz: 40}
     ],
     buoys: [
       {x: 275, z: 50}
