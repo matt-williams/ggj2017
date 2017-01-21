@@ -51,6 +51,11 @@ var mouse = new THREE.Vector2();
 var barrierCheck = new THREE.Vector2();
 
 function updateTouchCoords(event) {
+  console.log("event.type: " + event.type);
+  console.log("event.clientX: " + event.clientX);
+  console.log("event.clientY: " + event.clientY);
+  console.log("window.innerWidth: + window.innerWidth);
+  console.log("window.innerHeight: " + window.innerHeight);
   mouse.x = event.clientX / window.innerWidth * 2 - 1;
   mouse.y = 1 - event.clientY / window.innerHeight * 2;
   console.log("mouse.x: " + mouse.x);
