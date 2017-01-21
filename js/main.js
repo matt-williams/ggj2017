@@ -4,6 +4,7 @@ var pointLight;
 var simplePlaneMesh;
 
 var t = 0;
+var map = maps[0];
 var WIDTH = 200;
 var HEIGHT = 200;
 var DAMPING = 0.995;
@@ -48,10 +49,28 @@ function onDocumentTouchStop( event ) {
 }
 
 function isBarrier(x, z) {
+  for (var ii = 0; ii < map.barriers.length; ii++) {
+    var barrier = map.barriers[ii];
+    if ((x >= barrier.x) &&
+        (x < barrier.x + barrier.dx) && 
+        (z >= barrier.z) &&
+        (z < barrier.z + barrier.dz)) {
+      return true;
+    }
+  }
   return false;
 }
 
-function isTappable(x, y) {
+function isTappable(x, z) {
+  for (var ii = 0; ii < map.untappables.length; ii++) {
+    var untappable = map.untappables[ii];
+    if ((x >= untappable.x) &&
+        (x < untappable.x + untappable.dx) && 
+        (z >= untappable.z) &&
+        (z < untappable.z + untappable.dz)) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -77,6 +96,16 @@ function init() {
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(0, -10, 0);
   scene.add(mesh);
+
+  var barrierGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+  var barrierMaterial = new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 75});
+  for (var ii = 0; ii < map.barriers.length; ii++) {
+    var barrier = map.barriers[ii];
+    var barrierMesh = new THREE.Mesh(barrierGeometry, barrierMaterial);
+    barrierMesh.scale.set(barrier.dx / 10, 2, barrier.dz / 10);
+    barrierMesh.position.set((barrier.x + barrier.dx / 2) / 10 - 10, -10, (barrier.z + barrier.dz / 2) / 10 - 10);
+    scene.add(barrierMesh);
+  }
 
   var simpleGeometry = new THREE.PlaneBufferGeometry(20, 20);
   simpleGeometry.rotateX(-Math.PI / 2);
