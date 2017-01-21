@@ -23,6 +23,7 @@ var TICK_COUNT_REQ = 5;
 var buoys;
 var buoysTickCount;
 var buoysActive;
+var bellDurations;
 
 var touch = document.getElementById("container");
 var touchCoordX = 0;
@@ -35,6 +36,13 @@ var date = new Date;
 date.getTime(Date.getTime);
 var time = date.getHours() * 60 + date.getMinutes();
 console.log(date, date.getHours(), date.getMinutes(), time, DAY_PERIOD);
+
+var SOUND_PATH = "https://raw.githubusercontent.com/matt-williams/ggj2017/master/sounds/"
+var dropSound = null;
+var swipeSound = null;
+var swipeDuration = 0;
+var bellSound = null;
+var context;
 
 // Use a Raycaster to work out where a mouse event's coordinates relates to in world space
 var raycaster = new THREE.Raycaster();
@@ -51,6 +59,14 @@ function updateTouchCoords(event) {
     touchCoordX = intersects[0].point.x / (WIDTH / 10) + 0.5;
     touchCoordY = intersects[0].point.z / (HEIGHT / 10) + 0.5;
     touchDuration = Math.PI / WAVE_PERIOD_FACTOR;
+
+    if (event.type == "mousedown") {
+      playSound(dropSound);
+    } else if (swipeDuration <= 0) {
+      playSound(swipeSound);
+      swipeDuration = 30;
+    }
+
     return true;
   }
 
@@ -77,6 +93,10 @@ function onDocumentKeyPress( event ) {
     console.log("space");
     loadScene((currentScene + 1) % maps.length);
   }
+}
+
+function onError( error ) {
+  console.log("Error: " + error);
 }
 
 // Utility function to determine whether a point is in a barrier
@@ -108,8 +128,7 @@ function isBarrier(x, z) {
         (amX * adX + amZ * adZ > 0) && (amX * adX + amZ * adZ < adX * adX + adZ * adZ)) {
         return true;
       }
-    }
-    else {
+    } else {
       if ((x >= barrier.x) &&
           (x < barrier.x + barrier.dx) && 
           (z >= barrier.z) &&
@@ -190,6 +209,7 @@ function loadBuoys() {
   buoys = [];
   buoysTickCount = [];
   buoysActive = [];
+  bellDurations = [];
 
   if (map.buoys == undefined) {
     map.buoys = [];
@@ -206,6 +226,7 @@ function loadBuoys() {
     buoys[ii] = buoyMesh;
     buoysTickCount[ii] = 0;
     buoysActive[ii] = false;
+    bellDurations[ii] = 0;
     scene.add(buoyMesh);
   }
 }
@@ -235,6 +256,11 @@ function checkBuoyStatus(buoy, index, buoyY) {
     buoysTickCount[index]++;
 
     if (buoysTickCount[index] > TICK_COUNT_REQ) {
+      if (bellDurations[index] <= 0) {
+        playSound(bellSound);
+        bellDurations[index] = 100;
+      }
+
       buoy.material.color.setHex(0x00ff00);
       buoysActive[index] = true;
 
@@ -242,12 +268,57 @@ function checkBuoyStatus(buoy, index, buoyY) {
         transitioning = true;
         setTimeout(function() {loadScene((currentScene + 1) % maps.length);}, 500);
       }
+    } else {
+      buoy.material.color.setHex(0xffff00);
     }
-  }
-  else if (buoyY > buoyOffSensitivity)  {
+  } else if (buoyY > buoyOffSensitivity)  {
     buoy.material.color.setHex(0xff0000);
     buoysTickCount[index] = 0;
     buoysActive[index] = false;
+  }
+}
+
+// Function to load sounds
+function loadSounds() {
+  var request = new XMLHttpRequest();
+  var request2 = new XMLHttpRequest();
+  var request3 = new XMLHttpRequest();
+
+  request.open('GET', SOUND_PATH + "drop.mp3", true);
+  request.responseType = 'arraybuffer';
+  request2.open('GET', SOUND_PATH + "swipe.mp3", true);
+  request2.responseType = 'arraybuffer';
+  request3.open('GET', SOUND_PATH + "churchbell.mp3", true);
+  request3.responseType = 'arraybuffer';
+
+  request.onload = function() {
+    context.decodeAudioData(request.response, function(buffer) {
+      dropSound = buffer;
+    }, onError);
+  }
+  request2.onload = function() {
+    context.decodeAudioData(request2.response, function(buffer) {
+      swipeSound = buffer;
+    }, onError);
+  }
+  request3.onload = function() {
+    context.decodeAudioData(request3.response, function(buffer) {
+      bellSound = buffer;
+    }, onError);
+  }
+
+  request.send();
+  request2.send();
+  request3.send();
+}
+
+// Function to play sounds
+function playSound(buffer) {
+  if (buffer != null) {
+    var source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(context.destination);
+    source.start(0);
   }
 }
 
@@ -258,6 +329,10 @@ animate();
 
 // Initialize aspects of the game that persist across scenes
 function init() {
+  window.AudioContext = window.AudioContext || window.webkitAudioContext;
+  context = new AudioContext();
+  loadSounds();
+
   var scaleX = (window.innerWidth > window.innerHeight) ? window.innerWidth / window.innerHeight : 1;
   var scaleY = (window.innerHeight > window.innerWidth) ? window.innerHeight / window.innerWidth : 1;
   camera = new THREE.OrthographicCamera(-11 * scaleX, 11 * scaleX, 11 * scaleY, -11 * scaleY, 1, 10000);
@@ -430,6 +505,12 @@ function animate() {
     var midZ = Math.floor(touchCoordY * HEIGHT);
     handleTouch(midX, midZ);
     touchDuration--;
+  }
+
+  swipeDuration--;
+
+  for (var index = 0; index < bellDurations.length; index++) {
+    bellDurations[index]--;
   }
 
   t++;
