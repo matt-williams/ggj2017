@@ -250,5 +250,15 @@ var maps = [
     untappables: [
       {x: 40, z: 60, dx: 40, dz: 40}
     ]
+  },
+  {
+    scene: 17,
+    size: {dx: 200, dz: 50},
+    buoys: [
+      {x: 25, z: 25}
+    ],
+    collectors: [
+      {x: 75, z: 0, dx: 2, dz: 50, capacity: 20, yield: -1.8}
+    ]
   }
 ]

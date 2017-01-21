@@ -141,6 +141,22 @@ function isBarrier(x, z) {
   return false;
 }
 
+// Utility function to determine whether a point is part of a collector
+function isCollector(x, z) {
+  for (var ii = 0; ii < map.collectors.length; ii++) {
+    var collector = map.collectors[ii];
+
+    if ((x >= collector.x) &&
+        (x < collector.x + collector.dx) &&
+        (z >= collector.z) &&
+        (z < collector.z + collector.dz)) {
+      return collector;
+    }
+  }
+
+  return false;
+}
+
 // Utility function to determine whether a point is part of a portal
 function isPortal(x, z) {
   for (var ii = 0; ii < map.portals.length; ii++) {
@@ -226,7 +242,30 @@ function loadBarriers() {
   }
 }
 
-// Utility function to load portal for the map
+// Utility function to load collectors for the map
+function loadCollectors() {
+  if (map.collectors == undefined) {
+    map.collectors = [];
+    return;
+  }
+
+  var collectorGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+  var collectorMaterial = new THREE.MeshPhongMaterial({color: 0xaa6622, shininess: 100});
+
+  for (var ii = 0; ii < map.collectors.length; ii++) {
+    var collector = map.collectors[ii];
+    collector.cumTotal = 0;
+    collector.currentField = null;
+    var midX = collector.x + (collector.dx / 2);
+    var midZ = collector.z + (collector.dz / 2);
+    var collectorMesh = new THREE.Mesh(collectorGeometry, collectorMaterial);
+    collectorMesh.scale.set(collector.dx / 10, 2, collector.dz / 10);
+    collectorMesh.position.set(midX / 10 - (WORLD_WIDTH / 2), -10, midZ / 10 - (WORLD_HEIGHT / 2));
+    scene.add(collectorMesh);
+  }
+}
+
+// Utility function to load portals for the map
 function loadPortals() {
   if (map.portals == undefined) {
     map.portals = [];
@@ -397,7 +436,7 @@ function playSound(buffer) {
 
 // Initialize, load and animate the first scene
 init();
-loadScene(0);
+loadScene(17);
 animate();
 
 // Initialize aspects of the game that persist across scenes
@@ -470,6 +509,7 @@ function loadScene(sceneNumber) {
   simpleMesh.position.set(0, -10, 0);
 
   loadBarriers();
+  loadCollectors();
   loadPortals();
   loadUntappables();
   loadBuoys();
@@ -521,6 +561,26 @@ function handleTouch(touchX, touchZ) {
   }
 }
 
+// Function to handle updating a collector
+function updateCollector(collector, velocity, currentField) {
+  if (!collector.currentField) {
+    collector.cumTotal += velocity * velocity;
+
+    if (collector.cumTotal > collector.capacity * collector.capacity) {
+      collector.currentField = field;
+    }
+  } else {
+    if (collector.currentField == currentField) {
+      collector.cumTotal = -5000;
+      return true;
+    } else if (collector.cumTotal < collector.capacity * collector.capacity) {
+      collector.currentField = null;
+    }
+  }
+
+  return false;
+}
+
 // Function to handle updating the field of vertices
 function updateField() {
   var newField = fields[1];
@@ -549,8 +609,20 @@ function updateField() {
           if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
         }
 
-        average /= 4;;
-        velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+        var collector = isCollector(x, z);
+        average /= 4;
+        var newVelocity = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+
+        if (collector) {
+          if (updateCollector(collector, newVelocity, newField)) {
+            velocity[index] = collector.yield;
+          } else {
+            velocity[index] = 0;
+          }
+        } else {
+          velocity[index] = newVelocity;
+        }
+
         newField[index] = height + velocity[index];
       }
     }
@@ -580,8 +652,20 @@ function updateField() {
           if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
         }
 
-        average /= 4;;
-        velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+        var collector = isCollector(x, z);
+        average /= 4;
+        var newVelocity = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+
+        if (collector) {
+          if (updateCollector(collector, newVelocity, newField)) {
+            velocity[index] = collector.yield;
+          } else {
+            velocity[index] = 0;
+          }
+        } else {
+          velocity[index] = newVelocity;
+        }
+
         newField[index] = height + velocity[index];
       }
     }
@@ -607,7 +691,19 @@ function updateField() {
           average += (field[index - 1] + field[index + 1] + field[index - WIDTH] + field[index + WIDTH]) / 4;
         }
 
-        velocity[index] = (velocity[index] + ((average - height) * 2)) * DAMPING;
+        var collector = isCollector(x, z);
+        var newVelocity = (velocity[index] + (average - height) * 2) * DAMPING;
+
+        if (collector) {
+          if (updateCollector(collector, newVelocity, newField)) {
+            velocity[index] = collector.yield;
+          } else {
+            velocity[index] = 0;
+          }
+        } else {
+          velocity[index] = newVelocity;
+        }
+
         newField[index] = height + velocity[index];
       }
     }
