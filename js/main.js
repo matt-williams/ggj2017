@@ -17,7 +17,7 @@ var WAVE_PERIOD_FACTOR = 0.15;
 var WAVE_GAUSSIAN_RADIUS = 5;
 var velocity, fields, field;
 
-var TICK_COUNT_REQ = 10;
+var TICK_COUNT_REQ = 5;
 var buoys;
 var buoysTickCount;
 var buoysActive;
@@ -174,7 +174,11 @@ function checkBuoyStatus(buoy, index, buoyY) {
     return;
   }
 
-  if (buoyY < -11) {
+  var buoyOnSensitivity = map.buoys[index].onSensitivity || -11;
+  var buoyOffSensitivity = map.buoys[index].offSensitivity || -9.5;
+  console.log(index, buoyY, buoyOnSensitivity, buoysTickCount[index]);
+
+  if (buoyY < buoyOnSensitivity) {
     buoysTickCount[index]++;
 
     if (buoysTickCount[index] > TICK_COUNT_REQ) {
@@ -187,9 +191,9 @@ function checkBuoyStatus(buoy, index, buoyY) {
       }
     }
   }
-  else if (buoyY > -9.5)  {
+  else if (buoyY > buoyOffSensitivity)  {
     buoy.material.color.setHex(0xff0000);
-    buoysTickCount = 0;
+    buoysTickCount[index] = 0;
     buoysActive[index] = false;
   }
 }
@@ -272,7 +276,7 @@ function loadScene(sceneNumber) {
 
 // Function to get from coordinates of an object to the grid index
 function translate(x, z) {
-  var position = (Math.round(x + (WORLD_WIDTH / 2)) * 10) + (Math.round(z + (WORLD_HEIGHT / 2)) * 10 * WORLD_WIDTH);
+  var position = (Math.round(x + (WORLD_WIDTH / 2)) * 10) + (Math.round(z + (WORLD_HEIGHT / 2)) * 10 * WIDTH);
   return position;
 }
 

@@ -35,7 +35,7 @@ var maps = [
       {x: 50, z: 60, dx: 250, dz: 40}
     ],
     buoys: [
-      {x: 275, z: 50}
+      {x: 275, z: 50, onSensitivity: -10.5}
     ],
     untappables: [
       {x: 50, z: 0, dx: 250, dz: 100}
@@ -62,7 +62,7 @@ var maps = [
       {x: 90, z: 60, dx: 20, dz: 80}
     ],
     buoys: [
-      {x: 60, z: 100}
+      {x: 60, z: 100, onSensitivity: -10.5}
     ],
     untappables: [
       {x: 0, z: 0, dx: 115, dz: 200},
