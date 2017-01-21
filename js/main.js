@@ -55,7 +55,7 @@ function updateTouchCoords(event) {
   var x = event.clientX || event.pageX;
   var y = event.clientY || event.pageY;
 
-  if (x.isNaN() || y.isNaN()) {
+  if (isNaN(x) || isNaN(y)) {
     return false;
   } else {
     mouse.x = x / window.innerWidth * 2 - 1;
