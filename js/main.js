@@ -290,6 +290,13 @@ function loadBuoys() {
     var buoyMesh = new THREE.Mesh(buoyGeometry, buoyMaterial);
     buoyMesh.position.set((buoy.x / 10) - (WORLD_WIDTH / 2), -10, (buoy.z / 10) - (WORLD_HEIGHT / 2));
     buoys[ii] = buoyMesh;
+    buoys[ii].movement = buoy.movement;
+
+    if (buoys[ii].movement) {
+      buoys[ii].movement.x0 = buoy.x;
+      buoys[ii].movement.z0 = buoy.z;
+    }
+
     buoysTickCount[ii] = 0;
     buoysActive[ii] = false;
     bellDurations[ii] = 0;
@@ -644,6 +651,43 @@ function updateBarriers() {
   }
 }
 
+function updateBuoys() {
+  for (var ii = 0; ii < buoys.length; ii++) {
+    if (buoys[ii].movement) {
+      var buoy = buoys[ii];
+      var target = buoy.movement;
+      var bX = untranslateX(target.x0);
+      var bZ = untranslateX(target.z0);
+      var tX = untranslateX(target.x);
+      var tZ = untranslateZ(target.z);
+
+      if (t % target.duration > target.duration / 2) {
+        var tProg = ((t % target.duration) - (target.duration / 2)) / (target.duration / 2);
+        buoy.position.set(bX * tProg + tX * (1 - tProg), buoy.position.y, bZ * tProg + tZ * (1 - tProg));
+      } else {
+        var tProg = (t % target.duration) / (target.duration / 2);
+        buoy.position.set(tX * tProg + bX * (1 - tProg), buoy.position.y, tZ * tProg + bZ * (1 - tProg));
+      }
+    }
+  }
+}
+
+function rockBuoys(normals) {
+  for (var ii = 0; ii < buoys.length; ii++) {
+    var buoy = buoys[ii];
+    var fieldIndex = translate(buoy.position.x, buoy.position.z);
+    var buoyY = field[fieldIndex] - 10;
+    buoy.position.set(buoy.position.x, -10, buoy.position.z);
+
+    var buoyNormalX = normals[fieldIndex * 3];
+    var buoyNormalY = normals[fieldIndex * 3 + 1];
+    var buoyNormalZ = normals[fieldIndex * 3 + 2];
+    buoy.lookAt(new THREE.Vector3(10 * buoyNormalX, 25 * buoyNormalY - 100 + buoyY, 10 * buoyNormalZ));
+
+    checkBuoyStatus(buoy, ii, buoyY);
+  }
+}
+
 // Animate a frame
 function animate() {
   if (paused) {
@@ -652,8 +696,9 @@ function animate() {
 
   requestAnimationFrame(animate);
 
-  // Update the barriers
+  // Update the barriers and buoys
   updateBarriers();
+  updateBuoys();
 
   if (touchDuration > 0) {
     var midX = Math.floor(touchCoordX * WIDTH);
@@ -699,20 +744,9 @@ function animate() {
   geometry.attributes.position.needsUpdate = true;
 
   // Make buoys rock
-  for (var ii = 0; ii < buoys.length; ii++) {
-    var buoy = buoys[ii];
-    var fieldIndex = translate(buoy.position.x, buoy.position.z);
-    var buoyY = field[fieldIndex] - 10;
-    buoy.position.set(buoy.position.x, -10, buoy.position.z);
+  rockBuoys(normals);
 
-    var buoyNormalX = normals[fieldIndex * 3];
-    var buoyNormalY = normals[fieldIndex * 3 + 1];
-    var buoyNormalZ = normals[fieldIndex * 3 + 2];
-    buoy.lookAt(new THREE.Vector3(10 * buoyNormalX, 25 * buoyNormalY - 100 + buoyY, 10 * buoyNormalZ));
-
-    checkBuoyStatus(buoy, ii, buoyY);
-  }
-
+  // Update the light source(s)
   updateLightSource();
 
   renderer.render(scene, camera);
