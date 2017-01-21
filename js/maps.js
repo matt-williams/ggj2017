@@ -128,5 +128,101 @@ var maps = [
       {x: 0, z: 0, dx: 200, dz: 180},
       {x: 20, z: 180, dx: 180, dz: 20}
     ]
+  },
+  {
+    scene: 10,
+    size: {dx: 200, dz: 200},
+    barriers: [
+      {x: -40 * Math.sqrt(2), z: -40 * Math.sqrt(2), dx: 80 * Math.sqrt(2), dz: 80 * Math.sqrt(2), rotation: Math.PI / 4},
+      {x: 200 - 40 * Math.sqrt(2), z: -40 * Math.sqrt(2), dx: 80 * Math.sqrt(2), dz: 80 * Math.sqrt(2), rotation: Math.PI / 4},
+      {x: 200 - 40 * Math.sqrt(2), z: 200 - 40 * Math.sqrt(2), dx: 80 * Math.sqrt(2), dz: 80 * Math.sqrt(2), rotation: Math.PI / 4},
+      {x: -40 * Math.sqrt(2), z: 200 - 40 * Math.sqrt(2), dx: 80 * Math.sqrt(2), dz: 80 * Math.sqrt(2), rotation: Math.PI / 4},
+      {x: 40, z: 80, dx: 120, dz: 40},
+      {x: 80, z: 40, dx: 40, dz: 120},
+      {x: 100 - 40 * Math.sqrt(2), z: 100 - 20 * Math.sqrt(2), dx: 80 * Math.sqrt(2), dz: 40 * Math.sqrt(2), rotation: Math.PI / 4},
+      {x: 100 - 40 * Math.sqrt(2), z: 100 - 20 * Math.sqrt(2), dx: 80 * Math.sqrt(2), dz: 40 * Math.sqrt(2), rotation: -Math.PI / 4}
+    ],
+    buoys: [
+      {x: 20, z: 100},
+      {x: 100, z: 20},
+      {x: 180, z: 100}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 80, dz: 200},
+      {x: 80, z: 0, dx: 40, dz: 160},
+      {x: 120, z: 0, dx: 80, dz: 200}
+    ]
+  },
+  {
+    scene: 11,
+    size: {dx: 100, dz: 100},
+    barriers: [
+      {x: 20, z: 20, dx: 60, dz: 80},
+      {x: -10, z: -10, dx: 20, dz: 20, rotation: Math.PI / 4},
+      {x: 90, z: -10, dx: 20, dz: 20, rotation: Math.PI / 4}
+    ],
+    buoys: [
+      {x: 90, z: 80}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 100, dz: 80},
+      {x: 20, z: 80, dx: 80, dz: 20}
+    ]
+  },
+  {
+    scene: 12,
+    size: {dx: 100, dz: 100},
+    barriers: [
+      {x: 20, z: 20, dx: 60, dz: 20},
+      {x: 60, z: 40, dx: 20, dz: 40},
+      {x: 20, z: 40, dx: 20, dz: 60},
+      {x: -10, z: -10, dx: 20, dz: 20, rotation: Math.PI / 4},
+      {x: 90, z: -10, dx: 20, dz: 20, rotation: Math.PI / 4},
+      {x: 90, z: 90, dx: 20, dz: 20, rotation: Math.PI / 4},
+      {x: 30, z: 90, dx: 20, dz: 20, rotation: Math.PI / 4}
+    ],
+    buoys: [
+      {x: 50, z: 50}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 100, dz: 80},
+      {x: 20, z: 80, dx: 80, dz: 20}
+    ]
+  },
+  {
+    scene: 13,
+    size: {dx: 150, dz: 150},
+    barriers: [
+      {x: 20, z: 20, dx: 110, dz: 110},
+      {x: 100, z: 0, dx: 30, dz: 20},
+      {x: 20, z: 130, dx: 30, dz: 20},
+      {x: 135, z: 135, dx: 30, dz: 30, rotation: Math.PI / 4},
+      {x: -15, z: -15, dx: 30, dz: 30, rotation: Math.PI / 4}
+    ],
+    buoys: [
+      {x: 70, z: 140},
+      {x: 90, z: 10}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 130, dz: 130},
+      {x: 20, z: 130, dx: 110, dz: 20},
+      {x: 130, z: 20, dx: 20, dz: 130}
+    ]
+  },
+  {
+    scene: 14,
+    size: {dx: 200, dz: 200},
+    barriers: [
+      {x: 40, z: 60, dx: 10, dz: 40},
+      {x: 50, z: 60, dx: 30, dz: 10},
+      {x: 50, z: 90, dx: 20, dz: 10},
+      {x: 70, z: 70, dx: 10, dz: 30, movement: {x: 70, z: 90, duration: 200}}
+    ],
+    buoys: [
+      {x: 60, z: 80}
+    ],
+    untappables: [
+      {x: 40, z: 60, dx: 40, dz: 40}
+    ]
   }
 ]

@@ -18,6 +18,7 @@ var WAVE_GAUSSIAN_RADIUS = 5;
 var velocity, fields, field;
 
 var barriers;
+var barriersMovement;
 
 var TICK_COUNT_REQ = 5;
 var buoys;
@@ -148,6 +149,7 @@ function isTappable(x, z) {
 // Utility function to load barriers for the map
 function loadBarriers() {
   barriers = [];
+  barriersMovement = [];
 
   if (map.barriers == undefined) {
     map.barriers = [];
@@ -172,6 +174,8 @@ function loadBarriers() {
     }
 
     barriers[ii] = barrierMesh;
+    barriersMovement[ii] = barrier.movement;
+
     scene.add(barrierMesh);
 
     // Do some work here to speed up handling for rotated barriers
@@ -420,8 +424,7 @@ function translate(x, z) {
 }
 
 // Utility function to handle touches, which may come from the mouse or remote sources
-function handleTouch(touchX, touchZ)
-{
+function handleTouch(touchX, touchZ) {
   if (isTappable(touchX, touchZ)) {
     var cosT = Math.cos(touchDuration * WAVE_PERIOD_FACTOR);
 
@@ -501,8 +504,7 @@ function updateField() {
   field = newField;
 }
 
-function updateLightSource()
-{
+function updateLightSource() {
   if (pointLightSun != undefined) {
     var linearPeriodFactor = (200 * time) / DAY_PERIOD;
     var wavePeriodFactor = time * 2 * Math.PI / DAY_PERIOD
@@ -513,6 +515,23 @@ function updateLightSource()
   }
 }
 
+function updateBarriers() {
+  for (var ii = 0; ii < barriers.length; ii++) {
+    if (barriersMovement[ii]) {
+      var barrier = barriers[ii];
+      var target = barriersMovement[ii];
+
+      if (t % target.duration > target.duration / 2) {
+        var tProg = ((t % target.duration) - (target.duration / 2)) / (target.duration / 2);
+        barrier.position.set(barrier.x * tProg + target.x * (1 - tProg), 0, barrier.z * tProg + target.z * (1 - tProg));
+      } else {
+        var tProg = (t % target.duration) / (target.duration / 2);
+        barrier.position.set(target.x * tProg + barrier.x * (1 - tProg), 0, target.z * tProg + barrier.z * (1 - tProg));
+      }
+    }
+  }
+}
+
 // Animate a frame
 function animate() {
   if (paused) {
@@ -520,6 +539,9 @@ function animate() {
   }
 
   requestAnimationFrame(animate);
+
+  // Update the barriers
+  updateBarriers();
 
   if (touchDuration > 0) {
     var midX = Math.floor(touchCoordX * WIDTH);
