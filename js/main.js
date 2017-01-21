@@ -3,9 +3,10 @@ var geometry, material, mesh;
 var pointLight;
 
 var t = 0;
+var tModSqrt2 = 0;
 var WIDTH = 200;
 var HEIGHT = 200;
-var DAMPING = 0.99995;
+var DAMPING = 0.995;
 var velocity = new Float64Array(WIDTH * HEIGHT);
 var fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
 var field = fields[0];
@@ -64,6 +65,7 @@ function animate() {
     }
   }
   t++;
+  tModSqrt2 = (tModSqrt2 + 1) % Math.SQRT2;
   var newField = fields[1];
 //  for (var z = 0; z < HEIGHT; z += HEIGHT - 1) {
 //    for (var x = 0; x < WIDTH; x++) {
@@ -101,10 +103,12 @@ function animate() {
                        (field[x + (z + 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[x + (z + 1) * WIDTH] - height, 2))) +
                        (field[(x - 1) + z * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x - 1) + z * WIDTH] - height, 2))) +
                        (field[(x + 1) + z * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x + 1) + z * WIDTH] - height, 2))));
-      force += Math.sqrt(0.5) * K * ((field[(x + 1) + (z - 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x + 1) + (z - 1) * WIDTH] - height, 2))) +
-                                     (field[(x - 1) + (z + 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x - 1) + (z + 1) * WIDTH] - height, 2))) +
-                                     (field[(x - 1) + (z - 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x - 1) + (z - 1) * WIDTH] - height, 2))) +
-                                     (field[(x + 1) + (z + 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x + 1) + (z + 1) * WIDTH] - height, 2))));
+      if (tModSqrt2 < 1) {
+        force += Math.sqrt(0.5) * K * ((field[(x + 1) + (z - 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x + 1) + (z - 1) * WIDTH] - height, 2))) +
+                                       (field[(x - 1) + (z + 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x - 1) + (z + 1) * WIDTH] - height, 2))) +
+                                       (field[(x - 1) + (z - 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x - 1) + (z - 1) * WIDTH] - height, 2))) +
+                                       (field[(x + 1) + (z + 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x + 1) + (z + 1) * WIDTH] - height, 2))));
+      }
       velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + force) * DAMPING;
       newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
     }
