@@ -52,8 +52,8 @@ var barrierCheck = new THREE.Vector2();
 
 function updateTouchCoords(event) {
   console.log("event.type: " + event.type);
-  for (var i = 0; i < event.length; i++) {console.log("event[" + i + "]: " + event[i]);
-  for (var i = 0; i < event.changedTouches.length; i++) {console.log("touches[" + i + "]: " + event.changedTouches[i].type);
+  for (var i = 0; i < event.length; i++) {console.log("event[" + i + "]: " + event[i]);}
+  for (var i = 0; i < event.changedTouches.length; i++) {console.log("touches[" + i + "]: " + event.changedTouches[i].type);}
   console.log("event.clientX: " + event.clientX);
   console.log("event.clientY: " + event.clientY);
   console.log("window.innerWidth: " + window.innerWidth);
