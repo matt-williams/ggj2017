@@ -1,17 +1,17 @@
 var scene, camera, renderer;
-var geometry, material, mesh;
+var geometry, mesh;
 var pointLight;
-var simplePlaneMesh;
-var bouy;
+var simpleMesh;
+
+var paused = true;
 
 var t = 0;
-var map = maps[0];
-var WIDTH = 200;
-var HEIGHT = 200;
+var map;
+var WIDTH, HEIGHT;
 var DAMPING = 0.995;
-var velocity = new Float64Array(WIDTH * HEIGHT);
-var fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
-var field = fields[0];
+var velocity, fields, field;
+
+var buoys;
 
 var touch = document.getElementById("container");
 var touchCoordX = 0;
@@ -27,8 +27,8 @@ function updateTouchCoords(event) {
   raycaster.setFromCamera(mouse, camera);
   var intersects = raycaster.intersectObjects([simpleMesh]);
   if (intersects.length > 0) {
-    touchCoordX = intersects[0].point.x / 20 + 0.5;
-    touchCoordY = intersects[0].point.z / 20 + 0.5;
+    touchCoordX = intersects[0].point.x / (WIDTH / 10) + 0.5;
+    touchCoordY = intersects[0].point.z / (HEIGHT / 10) + 0.5;
     touchDuration = Math.PI / 0.15;
     return true;
   }
@@ -76,11 +76,10 @@ function isTappable(x, z) {
 }
 
 init();
+loadScene(0);
 animate();
 
 function init() {
-  scene = new THREE.Scene();
-
   var scaleX = (window.innerWidth > window.innerHeight) ? window.innerWidth / window.innerHeight : 1;
   var scaleY = (window.innerHeight > window.innerWidth) ? window.innerHeight / window.innerWidth : 1;
   camera = new THREE.OrthographicCamera(-11 * scaleX, 11 * scaleX, 11 * scaleY, -11 * scaleY, 1, 10000);
@@ -89,44 +88,6 @@ function init() {
 
   pointLight = new THREE.PointLight(0xffffff, 1, 100);
   pointLight.position.set(-10, 0, -5);
-  scene.add(pointLight);
-
-  geometry = new THREE.PlaneBufferGeometry(20, 20, WIDTH - 1, HEIGHT - 1);
-  geometry.rotateX(-Math.PI / 2);
-  var material = new THREE.MeshPhongMaterial({color: 0x00ddddd, shininess: 75});
-  mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(0, -10, 0);
-  scene.add(mesh);
-
-  var barrierGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
-  var barrierMaterial = new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 75});
-  for (var ii = 0; ii < map.barriers.length; ii++) {
-    var barrier = map.barriers[ii];
-    var barrierMesh = new THREE.Mesh(barrierGeometry, barrierMaterial);
-    barrierMesh.scale.set(barrier.dx / 10, 2, barrier.dz / 10);
-    barrierMesh.position.set((barrier.x + barrier.dx / 2) / 10 - 10, -10, (barrier.z + barrier.dz / 2) / 10 - 10);
-    scene.add(barrierMesh);
-  }
-
-  var untappableGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
-  var untappableMaterial = new THREE.MeshLambertMaterial({color: 0x604000, opacity: 0.25, transparent: true});
-  for (var ii = 0; ii < map.untappables.length; ii++) {
-    var untappable = map.untappables[ii];
-    var untappableMesh = new THREE.Mesh(untappableGeometry, untappableMaterial);
-    untappableMesh.scale.set(untappable.dx / 10, 2, untappable.dz / 10);
-    untappableMesh.position.set((untappable.x + untappable.dx / 2) / 10 - 10, -10, (untappable.z + untappable.dz / 2) / 10 - 10);
-    scene.add(untappableMesh);
-  }
-
-  var simpleGeometry = new THREE.PlaneBufferGeometry(20, 20);
-  simpleGeometry.rotateX(-Math.PI / 2);
-  simpleMesh = new THREE.Mesh(simpleGeometry, new THREE.Material());
-  simpleMesh.position.set(0, -10, 0);
-
-  createBouy(0, 0);
-  //createBouy(5, 5);
-  console.log("bouy1: " + translate(0, 0));
-  //console.log("bouy2: " + translate(5, 5));
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -148,18 +109,68 @@ function init() {
   }, false);
 }
 
-function createBouy(x, z) {
-  
-  var cone = new THREE.ConeBufferGeometry(0.5, 2.5, 100);
-  var material = new THREE.MeshPhongMaterial({color: 0xff0000, shininess: 100});
-  bouy = new THREE.Mesh(cone, material);
-  bouy.position.set(x, -7, z);
-  scene.add(bouy);
+function loadScene(sceneNumber) {
+  scene = new THREE.Scene();
+  map = maps[sceneNumber];
 
+  scene.add(pointLight);
+
+  WIDTH = map.size.dx;
+  HEIGHT = map.size.dz;
+  velocity = new Float64Array(WIDTH * HEIGHT);
+  fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
+  field = fields[0];
+
+  geometry = new THREE.PlaneBufferGeometry(WIDTH / 10, HEIGHT / 10, WIDTH - 1, HEIGHT - 1);
+  geometry.rotateX(-Math.PI / 2);
+
+  var material = new THREE.MeshPhongMaterial({color: 0x00ddddd, shininess: 75});
+  mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(0, -10, 0);
+  scene.add(mesh);
+
+  var simpleGeometry = new THREE.PlaneBufferGeometry(WIDTH / 10, HEIGHT / 10);
+  simpleGeometry.rotateX(-Math.PI / 2);
+  simpleMesh = new THREE.Mesh(simpleGeometry, new THREE.Material());
+  simpleMesh.position.set(0, -10, 0);
+
+  var barrierGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+  var barrierMaterial = new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 75});
+  for (var ii = 0; ii < map.barriers.length; ii++) {
+    var barrier = map.barriers[ii];
+    var barrierMesh = new THREE.Mesh(barrierGeometry, barrierMaterial);
+    barrierMesh.scale.set(barrier.dx / 10, 2, barrier.dz / 10);
+    barrierMesh.position.set((barrier.x + barrier.dx / 2) / 10 - 10, -10, (barrier.z + barrier.dz / 2) / 10 - 10);
+    scene.add(barrierMesh);
+  }
+
+  var untappableGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+  var untappableMaterial = new THREE.MeshLambertMaterial({color: 0x604000, opacity: 0.25, transparent: true});
+  for (var ii = 0; ii < map.untappables.length; ii++) {
+    var untappable = map.untappables[ii];
+    var untappableMesh = new THREE.Mesh(untappableGeometry, untappableMaterial);
+    untappableMesh.scale.set(untappable.dx / 10, 2, untappable.dz / 10);
+    untappableMesh.position.set((untappable.x + untappable.dx / 2) / 10 - 10, -10, (untappable.z + untappable.dz / 2) / 10 - 10);
+    scene.add(untappableMesh);
+  }
+
+  buoys = [];
+
+  var buoyGeometry = new THREE.ConeBufferGeometry(0.5, 2.5, 100);
+  var buoyMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, shininess: 100});
+  for (var ii = 0; ii < map.buoys.length; ii++) {
+    var buoy = map.buoys[ii];
+    var buoyMesh = new THREE.Mesh(buoyGeometry, buoyMaterial);
+    buoyMesh.position.set(buoy.x / 10 - 10, -7, buoy.z / 10 - 10);
+    buoys[ii] = buoyMesh;
+    scene.add(buoyMesh);
+  }
+
+  paused = false;
 }
 
 function translate(x, z) {
-  var position = (Math.round((x + 10)/20) * WIDTH) + (Math.round((z + 10)/20 * HEIGHT) * WIDTH);
+  var position = (Math.round(x + 10) * 10) + (Math.round(z + 10) * 10 * (WIDTH / 10));
   return position;
 }
 
@@ -173,7 +184,7 @@ function animate() {
       for (var z = -5; z <= 5; z++) {
         for (var x = -5; x <= 5; x++) {
           if ((x + midX > 0) && (x + midX < WIDTH) && (z + midZ > 0) && (z + midZ < HEIGHT)) {
-            velocity[x + midX + (z + midZ) * WIDTH] += 0.7 * Math.exp((-x*x-z*z)/2) * Math.cos(touchDuration * 0.15);
+            velocity[x + midX + (z + midZ) * WIDTH] += 1.7 * Math.exp((-x*x-z*z)/2) * Math.cos(touchDuration * 0.15);
           }
         }
       }
@@ -234,8 +245,8 @@ function animate() {
       var vector1 = [-2, (field[(x - 1) + z * WIDTH] - field[(x + 1) + z * WIDTH]), 0];
       var vector2 = [0, (field[x + (z - 1) * WIDTH] - field[x + (z + 1) * WIDTH]), 2];
       normals[0 + (x * 3) + (z * 3 * WIDTH)] = (vector1[1] * vector2[2]) - (vector1[2] * vector2[1]);
-      normals[1 + (x * 3) + (z * 3 * WIDTH)] = (vector1[2] * vector2[0]) - (vector1[0] * vector2[2]);
       normals[2 + (x * 3) + (z * 3 * WIDTH)] = (vector1[0] * vector2[1]) - (vector1[1] * vector2[0]);
+      normals[1 + (x * 3) + (z * 3 * WIDTH)] = (vector1[2] * vector2[0]) - (vector1[0] * vector2[2]);
     }
   }
   geometry.attributes.normal.needsUpdate = true;
@@ -246,13 +257,16 @@ function animate() {
   }
   geometry.attributes.position.needsUpdate = true;
 
-  var bouyY = field[translate(0,0)] - 10;
-  bouy.position.set(0, bouyY, 0);
-//  var bouyNormalX = normals[translate(0,0) * 3];
-//  var bouyNormalY = normals[(translate(0,0) * 3) + 1];
-//  var bouyNormalZ = normals[(translate(0,0) * 3) + 2];
-//  bouy.lookAt(new THREE.Vector3(bouyNormalX,bouyNormalY,bouyNormalZ));
-//  console.log(bouyNormalX + " " + bouyNormalY + " " + bouyNormalZ);
+  for (var ii = 0; ii < buoys.length; ii++) {
+    var buoy = buoys[ii];
+    var fieldIndex = translate(buoy.position.x, buoy.position.z);
+    var buoyY = field[fieldIndex] - 10;
+    buoy.position.set(buoy.position.x, buoyY, buoy.position.z);
+    var buoyNormalX = normals[fieldIndex * 3];
+    var buoyNormalY = normals[fieldIndex * 3 + 1];
+    var buoyNormalZ = normals[fieldIndex * 3 + 2];
+    buoy.lookAt(new THREE.Vector3(10 * buoyNormalX, 25 * buoyNormalY - 110, 10 * buoyNormalZ));
+  }
 
   if (pointLight != undefined) {
     pointLight.position.set(-10 * Math.cos(0.01 * t), 0, -7 + 2 * Math.cos(0.02 * t));
