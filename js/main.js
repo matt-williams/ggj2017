@@ -105,27 +105,15 @@ function isBarrier(x, z) {
     var barrier = map.barriers[ii];
 
     if (barrier.rotation) {
-      var dx2 = barrier.dx / 2;
-      var dz2 = barrier.dz / 2;
-      var midX = barrier.x + dx2;
-      var midZ = barrier.z + dz2;
-      var aX = midX - dx2 * Math.cos(barrier.rotation) - dz2 * Math.sin(barrier.rotation);
-      var bX = midX + dx2 * Math.cos(barrier.rotation) - dz2 * Math.sin(barrier.rotation);
-      //var cX = midX + dx2 * Math.cos(barrier.rotation) + dz2 * Math.sin(barrier.rotation);
-      var dX = midX - dx2 * Math.cos(barrier.rotation) + dz2 * Math.sin(barrier.rotation);
-      var aZ = midZ + dx2 * Math.sin(barrier.rotation) - dz2 * Math.cos(barrier.rotation);
-      var bZ = midZ - dx2 * Math.sin(barrier.rotation) - dz2 * Math.cos(barrier.rotation);
-      //var cZ = midZ - dx2 * Math.sin(barrier.rotation) + dz2 * Math.cos(barrier.rotation);
-      var dZ = midZ + dx2 * Math.sin(barrier.rotation) + dz2 * Math.cos(barrier.rotation);
-      var amX = x - aX;
-      var amZ = z - aZ;
-      var abX = bX - aX;
-      var abZ = bZ - aZ;
-      var adX = dX - aX;
-      var adZ = dZ - aZ;
+      var amX = x - barrier.aX;
+      var amZ = z - barrier.aZ;
+      var abX = barrier.bX - barrier.aX;
+      var abZ = barrier.bZ - barrier.aZ;
+      var adX = barrier.dX - barrier.aX;
+      var adZ = barrier.dZ - barrier.aZ;
 
       if ((amX * abX + amZ * abZ > 0) && (amX * abX + amZ * abZ < abX * abX + abZ * abZ) &&
-        (amX * adX + amZ * adZ > 0) && (amX * adX + amZ * adZ < adX * adX + adZ * adZ)) {
+          (amX * adX + amZ * adZ > 0) && (amX * adX + amZ * adZ < adX * adX + adZ * adZ)) {
         return true;
       }
     } else {
@@ -137,6 +125,7 @@ function isBarrier(x, z) {
       }
     }
   }
+
   return false;
 }
 
@@ -144,6 +133,7 @@ function isBarrier(x, z) {
 function isTappable(x, z) {
   for (var ii = 0; ii < map.untappables.length; ii++) {
     var untappable = map.untappables[ii];
+
     if ((x >= untappable.x) &&
         (x < untappable.x + untappable.dx) && 
         (z >= untappable.z) &&
@@ -151,6 +141,7 @@ function isTappable(x, z) {
       return false;
     }
   }
+
   return true;
 }
 
@@ -168,11 +159,13 @@ function loadBarriers() {
 
   for (var ii = 0; ii < map.barriers.length; ii++) {
     var barrier = map.barriers[ii];
+    var dx2 = barrier.dx / 2;
+    var dz2 = barrier.dz / 2;
+    var midX = barrier.x + dx2;
+    var midZ = barrier.z + dz2;
     var barrierMesh = new THREE.Mesh(barrierGeometry, barrierMaterial);
     barrierMesh.scale.set(barrier.dx / 10, 2, barrier.dz / 10);
-    barrierMesh.position.set((barrier.x + barrier.dx / 2) / 10 - (WORLD_WIDTH / 2),
-                             -10,
-                             (barrier.z + barrier.dz / 2) / 10 - (WORLD_HEIGHT / 2));
+    barrierMesh.position.set(midX / 10 - (WORLD_WIDTH / 2), -10, midZ / 10 - (WORLD_HEIGHT / 2));
 
     if (barrier.rotation) {
       barrierMesh.rotation.y = barrier.rotation;
@@ -180,6 +173,20 @@ function loadBarriers() {
 
     barriers[ii] = barrierMesh;
     scene.add(barrierMesh);
+
+    // Do some work here to speed up handling for rotated barriers
+    if (barrier.rotation) {
+      var cosR = Math.cos(barrier.rotation);
+      var sinR = Math.sin(barrier.rotation);
+      barrier.aX = midX - dx2 * cosR - dz2 * sinR;
+      barrier.bX = midX + dx2 * cosR - dz2 * sinR;
+      //barrier.cX = midX + dx2 * cosR + dz2 * sinR;
+      barrier.dX = midX - dx2 * cosR + dz2 * sinR;
+      barrier.aZ = midZ + dx2 * sinR - dz2 * cosR;
+      barrier.bZ = midZ - dx2 * sinR - dz2 * cosR;
+      //barrier.cZ = midZ - dx2 * sinR + dz2 * cosR;
+      barrier.dZ = midZ + dx2 * sinR + dz2 * cosR;
+    }
   }
 }
 
@@ -416,10 +423,12 @@ function translate(x, z) {
 function handleTouch(touchX, touchZ)
 {
   if (isTappable(touchX, touchZ)) {
+    var cosT = Math.cos(touchDuration * WAVE_PERIOD_FACTOR);
+
     for (var z = -WAVE_GAUSSIAN_RADIUS; z <= WAVE_GAUSSIAN_RADIUS; z++) {
       for (var x = -WAVE_GAUSSIAN_RADIUS; x <= WAVE_GAUSSIAN_RADIUS; x++) {
         if ((x + touchX > 0) && (x + touchX < WIDTH) && (z + touchZ > 0) && (z + touchZ < HEIGHT)) {
-          velocity[x + touchX + (z + touchZ) * WIDTH] += TOUCH_FORCE * Math.exp((-x * x - z * z) / 2) * Math.cos(touchDuration * WAVE_PERIOD_FACTOR);
+          velocity[x + touchX + (z + touchZ) * WIDTH] += TOUCH_FORCE * Math.exp((-x * x - z * z) / 2) * cosT;
         }
       }
     }
@@ -434,16 +443,19 @@ function updateField() {
   for (var z = 0; z < HEIGHT; z += HEIGHT - 1) {
     for (var x = 0; x < WIDTH; x++) {
       if (!isBarrier(x, z)) {
-        var height = field[x + z * WIDTH];
+        var index = x + (z * WIDTH);
+        var height = field[index];
         var average = 0;
         var denominator = 0;
-        if (z > 0) { average += field[x + (z - 1) * WIDTH]; denominator++; }
-        if (z < HEIGHT - 1) { average += field[x + (z + 1) * WIDTH]; denominator++; }
-        if (x > 0) { average += field[x - 1 + z * WIDTH]; denominator++; }
-        if (x < WIDTH - 1) { average += field[x + 1 + z * WIDTH]; denominator++; }
-        average = average / denominator;
-        velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * denominator / 2) * DAMPING;
-        newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
+
+        if (z > 0) { average += field[index - WIDTH]; denominator++; }
+        if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
+        if (x > 0) { average += field[index - 1]; denominator++; }
+        if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+
+        average /= denominator;
+        velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+        newField[index] = height + velocity[index];
       }
     }
   }
@@ -452,16 +464,19 @@ function updateField() {
   for (var x = 0; x < WIDTH; x += WIDTH - 1) {
     for (var z = 1; z < HEIGHT - 1; z++) {
       if (!isBarrier(x, z)) {
-        var height = field[x + z * WIDTH];
+        var index = x + (z * WIDTH);
+        var height = field[index];
         var average = 0;
         var denominator = 0;
-        if (z > 0) { average += field[x + (z - 1) * WIDTH]; denominator++; }
-        if (z < HEIGHT - 1) { average += field[x + (z + 1) * WIDTH]; denominator++; }
-        if (x > 0) { average += field[x - 1 + z * WIDTH]; denominator++; }
-        if (x < WIDTH - 1) { average += field[x + 1 + z * WIDTH]; denominator++; }
-        average = average / denominator;
-        velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * denominator / 2) * DAMPING;
-        newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
+
+        if (z > 0) { average += field[index - WIDTH]; denominator++; }
+        if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
+        if (x > 0) { average += field[index - 1]; denominator++; }
+        if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+
+        average /= denominator;
+        velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+        newField[index] = height + velocity[index];
       }
     }
   }
@@ -470,10 +485,12 @@ function updateField() {
   for (var z = 1; z < HEIGHT - 1; z++) {
     for (var x = 1; x < WIDTH - 1; x++) {
       if (!isBarrier(x, z)) {
-        var height = field[x + z * WIDTH];
-        var average = (field[x + (z - 1) * WIDTH] + field[x + (z + 1) * WIDTH] + field[x - 1 + z * WIDTH] + field[x + 1 + z * WIDTH]) / 4;
-        velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * 2) * DAMPING;
-        newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
+        var index = x + z * WIDTH;
+        var height = field[index];
+        var average = (field[index - 1] + field[index + 1] + field[index - WIDTH] + field[index + WIDTH]) / 4;
+
+        velocity[index] = (velocity[index] + ((average - height) * 2)) * DAMPING;
+        newField[index] = height + velocity[index];
       }
     }
   }
@@ -487,8 +504,12 @@ function updateField() {
 function updateLightSource()
 {
   if (pointLightSun != undefined) {
-    pointLightSun.position.set((((200 * time / DAY_PERIOD) + 200) % 200) - 100, 0, -5 + 5 * Math.cos(time * 2 * Math.PI / DAY_PERIOD));
-    pointLightMoon.position.set((((200 * time / DAY_PERIOD) + 100) % 200) - 100, 0, -5 - 5 * Math.cos(time * 2 * Math.PI / DAY_PERIOD));
+    var linearPeriodFactor = (200 * time) / DAY_PERIOD;
+    var wavePeriodFactor = time * 2 * Math.PI / DAY_PERIOD
+    var cosP = Math.cos(wavePeriodFactor);
+
+    pointLightSun.position.set((linearPeriodFactor % 200) - 100, 0, -5 + 5 * cosP);
+    pointLightMoon.position.set(((linearPeriodFactor + 100) % 200) - 100, 0, -5 - 5 * cosP);
   }
 }
 
@@ -524,9 +545,11 @@ function animate() {
     for (var x = 1; x < WIDTH - 1; x++) {
       var vector1 = [-2, (field[(x - 1) + z * WIDTH] - field[(x + 1) + z * WIDTH]), 0];
       var vector2 = [0, (field[x + (z - 1) * WIDTH] - field[x + (z + 1) * WIDTH]), 2];
-      normals[0 + (x * 3) + (z * 3 * WIDTH)] = (vector1[1] * vector2[2]) - (vector1[2] * vector2[1]);
-      normals[2 + (x * 3) + (z * 3 * WIDTH)] = (vector1[0] * vector2[1]) - (vector1[1] * vector2[0]);
-      normals[1 + (x * 3) + (z * 3 * WIDTH)] = (vector1[2] * vector2[0]) - (vector1[0] * vector2[2]);
+      var indexOffset = (x * 3) + (z * 3 * WIDTH);
+
+      normals[0 + indexOffset] = (vector1[1] * vector2[2]) - (vector1[2] * vector2[1]);
+      normals[1 + indexOffset] = (vector1[2] * vector2[0]) - (vector1[0] * vector2[2]);
+      normals[2 + indexOffset] = (vector1[0] * vector2[1]) - (vector1[1] * vector2[0]);
     }
   }
 
@@ -547,6 +570,7 @@ function animate() {
     var fieldIndex = translate(buoy.position.x, buoy.position.z);
     var buoyY = field[fieldIndex] - 10;
     buoy.position.set(buoy.position.x, -10, buoy.position.z);
+
     var buoyNormalX = normals[fieldIndex * 3];
     var buoyNormalY = normals[fieldIndex * 3 + 1];
     var buoyNormalZ = normals[fieldIndex * 3 + 2];
