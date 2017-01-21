@@ -1,6 +1,7 @@
 var scene, camera, renderer;
 var geometry, material, mesh;
 var pointLight;
+var simplePlaneMesh;
 
 var t = 0;
 var WIDTH = 200;
@@ -16,18 +17,29 @@ var touchCoordY = 0;
 var touchDuration = 0;
 var touched = false;
 
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+function updateTouchCoords(event) {
+  mouse.x = event.clientX / window.innerWidth * 2 - 1;
+  mouse.y = 1 - event.clientY / window.innerHeight * 2;
+  raycaster.setFromCamera(mouse, camera);
+  var intersects = raycaster.intersectObjects([simpleMesh]);
+  if (intersects.length > 0) {
+    touchCoordX = intersects[0].point.x / 20 + 0.5;
+    touchCoordY = intersects[0].point.z / 20 + 0.5;
+    touchDuration = Math.PI / 0.15;
+    return true;
+  }
+  return false;
+}
+
 function onDocumentTouchStart( event ) {
-  touchCoordX = event.clientX / touch.offsetWidth;
-  touchCoordY = event.clientY / touch.offsetHeight;
-  touchDuration = Math.PI / 0.15;
-  touched = true;
+  touched = touched || updateTouchCoords(event);
 }
 
 function onDocumentTouchMove( event ) {
   if (touched) {
-    touchCoordX = event.clientX / touch.offsetWidth;
-    touchCoordY = event.clientY / touch.offsetHeight;
-    touchDuration = Math.PI / 0.15;
+    updateTouchCoords(event);
   }
 }
 
@@ -57,6 +69,11 @@ function init() {
   mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(0, -10, 0);
   scene.add(mesh);
+
+  var simpleGeometry = new THREE.PlaneBufferGeometry(20, 20);
+  simpleGeometry.rotateX(-Math.PI / 2);
+  simpleMesh = new THREE.Mesh(simpleGeometry, new THREE.Material());
+  simpleMesh.position.set(0, -10, 0);
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
