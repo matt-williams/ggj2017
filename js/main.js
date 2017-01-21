@@ -544,6 +544,9 @@ function animate() {
 
   requestAnimationFrame(animate);
 
+  console.log("mouse.x: " + mouse.x);
+  console.log("mouse.y: " + mouse.y);
+
   // Update the barriers
   updateBarriers();
 
