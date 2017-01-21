@@ -15,8 +15,14 @@ var maps = [
   {
     scene: 1,
     size: {dx: 300, dz: 100},
-    barriers: [],
-    buoys: [],
-    untappables: []
+    barriers: [
+      {x: 25, z: 25, dx: 10, dz: 10}
+    ],
+    buoys: [
+      {x: 30, z: 30}
+    ],
+    untappables: [
+      {x: 15, z: 15, dx: 30, dz: 30}
+    ]
   }
 ]
