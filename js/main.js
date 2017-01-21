@@ -61,7 +61,7 @@ function updateTouchCoords(event) {
     touchCoordY = intersects[0].point.z / (HEIGHT / 10) + 0.5;
     touchDuration = Math.PI / WAVE_PERIOD_FACTOR;
 
-    if (event.type == "touchstart" || "mousedown") {
+    if (event.type == "touchstart" || event.type == "mousedown") {
       playSound(dropSound);
     } else if (swipeDuration <= 0) {
       playSound(swipeSound);
