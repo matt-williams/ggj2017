@@ -9,7 +9,7 @@ function Waves(width, height, renderer) {
   this.activeTarget = 0;
   this.targets = [];
   for (var ii = 0; ii < 2; ii++) {
-    this.targets.push(new THREE.WebGLRenderTarget(this.width, this.height, {minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.FloatType, depthBuffer: false, stencilBuffer: false}));
+    this.targets.push(new THREE.WebGLRenderTarget(this.width, this.height, {minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.HalfFloatType, depthBuffer: false, stencilBuffer: false}));
   }
   this.vertexShader =
     "void main() {\n" +
