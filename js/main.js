@@ -117,13 +117,40 @@ function isBarrier(x, z) {
           (amX * adX + amZ * adZ > 0) && (amX * adX + amZ * adZ < adX * adX + adZ * adZ)) {
         return true;
       }
-    } else {
+    } else if (!barrier.movement) {
       if ((x >= barrier.x) &&
-          (x < barrier.x + barrier.dx) && 
+          (x < barrier.x + barrier.dx) &&
           (z >= barrier.z) &&
           (z < barrier.z + barrier.dz)) {
         return true;
       }
+    } else {
+      var barrierMesh = barriers[ii];
+      var bX = translateX(barrierMesh.position.x);
+      var bZ = translateZ(barrierMesh.position.z);
+
+      if ((x >= bX - barrier.dx) &&
+          (x < bX) &&
+          (z >= bZ - barrier.dz / 2) &&
+          (z < bZ + barrier.dz / 2)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// Utility function to determine whether a point is part of a portal
+function isPortal(x, z) {
+  for (var ii = 0; ii < map.portals.length; ii++) {
+    var portal = map.portals[ii];
+
+    if ((x >= portal.x) &&
+        (x < portal.x + portal.dx) &&
+        (z >= portal.z) &&
+        (z < portal.z + portal.dz)) {
+      return portal;
     }
   }
 
@@ -176,6 +203,11 @@ function loadBarriers() {
     barriers[ii] = barrierMesh;
     barriersMovement[ii] = barrier.movement;
 
+    if (barriersMovement[ii]) {
+      barriersMovement[ii].x0 = barrier.x + dx2;
+      barriersMovement[ii].z0 = barrier.z + dz2;
+    }
+
     scene.add(barrierMesh);
 
     // Do some work here to speed up handling for rotated barriers
@@ -191,6 +223,29 @@ function loadBarriers() {
       //barrier.cZ = midZ - dx2 * sinR + dz2 * cosR;
       barrier.dZ = midZ + dx2 * sinR + dz2 * cosR;
     }
+  }
+}
+
+// Utility function to load portal for the map
+function loadPortals() {
+  if (map.portals == undefined) {
+    map.portals = [];
+    return;
+  }
+
+  var portalGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+  var portalMaterial = new THREE.MeshPhongMaterial({color: 0xff00ff, shininess: 100});
+
+  for (var ii = 0; ii < map.portals.length; ii++) {
+    var portal = map.portals[ii];
+    var dx2 = portal.dx / 2;
+    var dz2 = portal.dz / 2;
+    var midX = portal.x + portal.px + dx2;
+    var midZ = portal.z + portal.pz + dz2;
+    var portalMesh = new THREE.Mesh(portalGeometry, portalMaterial);
+    portalMesh.scale.set(portal.dx / 10, 2, portal.dz / 10);
+    portalMesh.position.set(midX / 10 - (WORLD_WIDTH / 2), -10, midZ / 10 - (WORLD_HEIGHT / 2));
+    scene.add(portalMesh);
   }
 }
 
@@ -408,6 +463,7 @@ function loadScene(sceneNumber) {
   simpleMesh.position.set(0, -10, 0);
 
   loadBarriers();
+  loadPortals();
   loadUntappables();
   loadBuoys();
 
@@ -417,10 +473,30 @@ function loadScene(sceneNumber) {
   paused = false;
 }
 
-// Function to get from coordinates of an object to the grid index
+// Functions to get from coordinates of an object to the grid index
+function translateX(x) {
+  var trX = Math.round(x + (WORLD_WIDTH / 2)) * 10;
+  return trX;
+}
+
+function translateZ(z) {
+  var trZ = Math.round(z + (WORLD_HEIGHT / 2)) * 10;
+  return trZ;
+}
+
 function translate(x, z) {
-  var position = (Math.round(x + (WORLD_WIDTH / 2)) * 10) + (Math.round(z + (WORLD_HEIGHT / 2)) * 10 * WIDTH);
+  var position = translateX(x) + (translateZ(z) * WIDTH);
   return position;
+}
+
+function untranslateX(x) {
+  var unX = (x / 10) - (WORLD_WIDTH / 2);
+  return unX;
+}
+
+function untranslateZ(z) {
+  var unZ = (z / 10) - (WORLD_HEIGHT / 2);
+  return unZ;
 }
 
 // Utility function to handle touches, which may come from the mouse or remote sources
@@ -451,10 +527,20 @@ function updateField() {
         var average = 0;
         var denominator = 0;
 
-        if (z > 0) { average += field[index - WIDTH]; denominator++; }
-        if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
-        if (x > 0) { average += field[index - 1]; denominator++; }
-        if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+        var portal = isPortal(x, z);
+
+        if (portal) {
+          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
+          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
+          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
+          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
+          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+        } else {
+          if (z > 0) { average += field[index - WIDTH]; denominator++; }
+          if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
+          if (x > 0) { average += field[index - 1]; denominator++; }
+          if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+        }
 
         average /= 4;;
         velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
@@ -472,10 +558,20 @@ function updateField() {
         var average = 0;
         var denominator = 0;
 
-        if (z > 0) { average += field[index - WIDTH]; denominator++; }
-        if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
-        if (x > 0) { average += field[index - 1]; denominator++; }
-        if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+        var portal = isPortal(x, z);
+
+        if (portal) {
+          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
+          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
+          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
+          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
+          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+        } else {
+          if (z > 0) { average += field[index - WIDTH]; denominator++; }
+          if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
+          if (x > 0) { average += field[index - 1]; denominator++; }
+          if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+        }
 
         average /= 4;;
         velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
@@ -490,7 +586,19 @@ function updateField() {
       if (!isBarrier(x, z)) {
         var index = x + z * WIDTH;
         var height = field[index];
-        var average = (field[index - 1] + field[index + 1] + field[index - WIDTH] + field[index + WIDTH]) / 4;
+        var average = 0;
+
+        var portal = isPortal(x, z);
+
+        if (portal) {
+          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
+          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
+          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
+          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
+          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+        } else {
+          average += (field[index - 1] + field[index + 1] + field[index - WIDTH] + field[index + WIDTH]) / 4;
+        }
 
         velocity[index] = (velocity[index] + ((average - height) * 2)) * DAMPING;
         newField[index] = height + velocity[index];
@@ -520,13 +628,17 @@ function updateBarriers() {
     if (barriersMovement[ii]) {
       var barrier = barriers[ii];
       var target = barriersMovement[ii];
+      var bX = untranslateX(target.x0);
+      var bZ = untranslateX(target.z0);
+      var tX = untranslateX(target.x);
+      var tZ = untranslateZ(target.z);
 
       if (t % target.duration > target.duration / 2) {
         var tProg = ((t % target.duration) - (target.duration / 2)) / (target.duration / 2);
-        barrier.position.set(barrier.x * tProg + target.x * (1 - tProg), 0, barrier.z * tProg + target.z * (1 - tProg));
+        barrier.position.set(bX * tProg + tX * (1 - tProg), barrier.position.y, bZ * tProg + tZ * (1 - tProg));
       } else {
         var tProg = (t % target.duration) / (target.duration / 2);
-        barrier.position.set(target.x * tProg + barrier.x * (1 - tProg), 0, target.z * tProg + barrier.z * (1 - tProg));
+        barrier.position.set(tX * tProg + bX * (1 - tProg), barrier.position.y, tZ * tProg + bZ * (1 - tProg));
       }
     }
   }

@@ -216,13 +216,23 @@ var maps = [
       {x: 40, z: 60, dx: 10, dz: 40},
       {x: 50, z: 60, dx: 30, dz: 10},
       {x: 50, z: 90, dx: 20, dz: 10},
-      {x: 70, z: 70, dx: 10, dz: 30, movement: {x: 70, z: 90, duration: 200}}
+      {x: 70, z: 70, dx: 10, dz: 30, movement: {x: 75, z: 105, duration: 200}}
     ],
     buoys: [
       {x: 60, z: 80}
     ],
     untappables: [
       {x: 40, z: 60, dx: 40, dz: 40}
+    ]
+  },
+  {
+    scene: 15,
+    size: {dx: 200, dz: 200},
+    buoys: [
+      {x: 60, z: 80}
+    ],
+    portals: [
+      {x: 120, z: 60, dx: 2, dz: 40, px: -40, pz: 0}
     ]
   }
 ]
