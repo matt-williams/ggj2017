@@ -5,22 +5,35 @@ var pointLight;
 var t = 0;
 var WIDTH = 200;
 var HEIGHT = 200;
-var DAMPING = 0.999;
+var DAMPING = 0.995;
 var velocity = new Float64Array(WIDTH * HEIGHT);
 var fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
 var field = fields[0];
 
 var touch = document.getElementById("container");
-var mc = new Hammer(touch);
 var touchCoordX = 0;
 var touchCoordY = 0;
+var touchDuration = 0;
+var touched = false;
 
-mc.on("tap press", function(ev) {
-    console.log(ev.type + " gesture detected.");
-    touchCoordX = ev.center.x / touch.offsetWidth;
-    touchCoordY = ev.center.y / touch.offsetHeight;
-//    var timeElapsed = ev.deltaTime;
-});
+function onDocumentTouchStart( event ) {
+  touchCoordX = event.clientX / touch.offsetWidth;
+  touchCoordY = event.clientY / touch.offsetHeight;
+  touchDuration = Math.PI / 0.15;
+  touched = true;
+}
+
+function onDocumentTouchMove( event ) {
+  if (touched) {
+    touchCoordX = event.clientX / touch.offsetWidth;
+    touchCoordY = event.clientY / touch.offsetHeight;
+    touchDuration = Math.PI / 0.15;
+  }
+}
+
+function onDocumentTouchStop( event ) {
+  touched = false;
+}
 
 init();
 animate();
@@ -30,7 +43,7 @@ function init() {
 
   var scaleX = (window.innerWidth > window.innerHeight) ? window.innerWidth / window.innerHeight : 1;
   var scaleY = (window.innerHeight > window.innerWight) ? window.innerHeight / window.innerWidth : 1;
-  camera = new THREE.OrthographicCamera(-11 * scaleX, 11 * scaleX, 11 * scaleY, -11 * scaleY, 1, 21);
+  camera = new THREE.OrthographicCamera(-11 * scaleX, 11 * scaleX, 11 * scaleY, -11 * scaleY, 1, 10000);
   camera.rotation.x = -Math.PI / 2;
   camera.position.set(0, 5, 0);
 
@@ -49,19 +62,25 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   document.getElementById("container").appendChild(renderer.domElement);
+  document.addEventListener("mousedown", onDocumentTouchStart, false);
+  document.addEventListener("mousemove", onDocumentTouchMove, false);
+  document.addEventListener("mouseup", onDocumentTouchStop, false);
 }
 
 function animate() {
   requestAnimationFrame(animate);
 
-  var midX = Math.floor(touchCoordX * WIDTH);
-  var midZ = Math.floor(touchCoordY * HEIGHT);
-  for (var z = -5; z <= 5; z++) {
-    for (var x = -5; x <= 5; x++) {
-      if ((x + midX > 0) && (x + midX < WIDTH) && (z + midZ > 0) && (z + midZ < HEIGHT)) {
-        velocity[x + midX + (z + midZ) * WIDTH] += 0.3 * Math.exp((-x*x-z*z)/2) * Math.sin(t * 0.15);
+  if (touchDuration > 0) {
+    var midX = Math.floor(touchCoordX * WIDTH);
+    var midZ = Math.floor(touchCoordY * HEIGHT);
+    for (var z = -5; z <= 5; z++) {
+      for (var x = -5; x <= 5; x++) {
+        if ((x + midX > 0) && (x + midX < WIDTH) && (z + midZ > 0) && (z + midZ < HEIGHT)) {
+          velocity[x + midX + (z + midZ) * WIDTH] += 0.7 * Math.exp((-x*x-z*z)/2) * Math.cos(touchDuration * 0.15);
+        }
       }
     }
+    touchDuration--;
   }
   t++;
   var newField = fields[1];
