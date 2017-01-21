@@ -1,6 +1,6 @@
 var scene, camera, renderer;
 var geometry, mesh;
-var pointLight;
+var pointLightSun, pointLightMoon;
 var simpleMesh;
 
 var paused = true;
@@ -17,6 +17,8 @@ var WAVE_PERIOD_FACTOR = 0.15;
 var WAVE_GAUSSIAN_RADIUS = 5;
 var velocity, fields, field;
 
+var barriers;
+
 var TICK_COUNT_REQ = 5;
 var buoys;
 var buoysTickCount;
@@ -28,9 +30,16 @@ var touchCoordY = 0;
 var touchDuration = 0;
 var touched = false;
 
+var DAY_PERIOD = 24 * 60;
+var date = new Date;
+date.getTime(Date.getTime);
+var time = date.getHours() * 60 + date.getMinutes();
+console.log(date, date.getHours(), date.getMinutes(), time, DAY_PERIOD);
+
 // Use a Raycaster to work out where a mouse event's coordinates relates to in world space
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
+var barrierCheck = new THREE.Vector2();
 
 function updateTouchCoords(event) {
   mouse.x = event.clientX / window.innerWidth * 2 - 1;
@@ -48,6 +57,7 @@ function updateTouchCoords(event) {
   return false;
 }
 
+// Event handlers
 function onDocumentTouchStart( event ) {
   touched = touched || updateTouchCoords(event);
 }
@@ -62,15 +72,50 @@ function onDocumentTouchStop( event ) {
   touched = false;
 }
 
+function onDocumentKeyPress( event ) {
+  if (event.which == 32) {
+    console.log("space");
+    loadScene((currentScene + 1) % maps.length);
+  }
+}
+
 // Utility function to determine whether a point is in a barrier
 function isBarrier(x, z) {
   for (var ii = 0; ii < map.barriers.length; ii++) {
     var barrier = map.barriers[ii];
-    if ((x >= barrier.x) &&
-        (x < barrier.x + barrier.dx) && 
-        (z >= barrier.z) &&
-        (z < barrier.z + barrier.dz)) {
-      return true;
+
+    if (barrier.rotation) {
+      var dx2 = barrier.dx / 2;
+      var dz2 = barrier.dz / 2;
+      var midX = barrier.x + dx2;
+      var midZ = barrier.z + dz2;
+      var aX = midX - dx2 * Math.cos(barrier.rotation) - dz2 * Math.sin(barrier.rotation);
+      var bX = midX + dx2 * Math.cos(barrier.rotation) - dz2 * Math.sin(barrier.rotation);
+      //var cX = midX + dx2 * Math.cos(barrier.rotation) + dz2 * Math.sin(barrier.rotation);
+      var dX = midX - dx2 * Math.cos(barrier.rotation) + dz2 * Math.sin(barrier.rotation);
+      var aZ = midZ + dx2 * Math.sin(barrier.rotation) - dz2 * Math.cos(barrier.rotation);
+      var bZ = midZ - dx2 * Math.sin(barrier.rotation) - dz2 * Math.cos(barrier.rotation);
+      //var cZ = midZ - dx2 * Math.sin(barrier.rotation) + dz2 * Math.cos(barrier.rotation);
+      var dZ = midZ + dx2 * Math.sin(barrier.rotation) + dz2 * Math.cos(barrier.rotation);
+      var amX = x - aX;
+      var amZ = z - aZ;
+      var abX = bX - aX;
+      var abZ = bZ - aZ;
+      var adX = dX - aX;
+      var adZ = dZ - aZ;
+
+      if ((amX * abX + amZ * abZ > 0) && (amX * abX + amZ * abZ < abX * abX + abZ * abZ) &&
+        (amX * adX + amZ * adZ > 0) && (amX * adX + amZ * adZ < adX * adX + adZ * adZ)) {
+        return true;
+      }
+    }
+    else {
+      if ((x >= barrier.x) &&
+          (x < barrier.x + barrier.dx) && 
+          (z >= barrier.z) &&
+          (z < barrier.z + barrier.dz)) {
+        return true;
+      }
     }
   }
   return false;
@@ -92,6 +137,8 @@ function isTappable(x, z) {
 
 // Utility function to load barriers for the map
 function loadBarriers() {
+  barriers = [];
+
   if (map.barriers == undefined) {
     map.barriers = [];
     return;
@@ -107,6 +154,12 @@ function loadBarriers() {
     barrierMesh.position.set((barrier.x + barrier.dx / 2) / 10 - (WORLD_WIDTH / 2),
                              -10,
                              (barrier.z + barrier.dz / 2) / 10 - (WORLD_HEIGHT / 2));
+
+    if (barrier.rotation) {
+      barrierMesh.rotation.y = barrier.rotation;
+    }
+
+    barriers[ii] = barrierMesh;
     scene.add(barrierMesh);
   }
 }
@@ -211,8 +264,10 @@ function init() {
   camera.rotation.x = -Math.PI / 2;
   camera.position.set(0, 5, 0);
 
-  pointLight = new THREE.PointLight(0xffffff, 1, 100);
-  pointLight.position.set(-10, 0, -5);
+  pointLightSun = new THREE.PointLight(0xffffff, 1, 100);
+  pointLightSun.position.set(-20, 0, -5);
+  pointLightMoon = new THREE.PointLight(0x888888, 1, 100);
+  pointLightMoon.position.set(20, 0, -5);
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -221,6 +276,7 @@ function init() {
   document.addEventListener("mousedown", onDocumentTouchStart, false);
   document.addEventListener("mousemove", onDocumentTouchMove, false);
   document.addEventListener("mouseup", onDocumentTouchStop, false);
+  document.addEventListener("keypress", onDocumentKeyPress, false);
 
   window.addEventListener("resize", function() {
     var scaleX = (window.innerWidth > window.innerHeight) ? window.innerWidth / window.innerHeight : 1;
@@ -241,7 +297,8 @@ function loadScene(sceneNumber) {
   scene = new THREE.Scene();
   map = maps[sceneNumber];
 
-  scene.add(pointLight);
+  scene.add(pointLightSun);
+  scene.add(pointLightMoon);
 
   WIDTH = map.size.dx;
   HEIGHT = map.size.dz;
@@ -280,7 +337,7 @@ function translate(x, z) {
   return position;
 }
 
-// Utility function to handle touches
+// Utility function to handle touches, which may come from the mouse or remote sources
 function handleTouch(touchX, touchZ)
 {
   if (isTappable(touchX, touchZ)) {
@@ -354,8 +411,9 @@ function updateField() {
 
 function updateLightSource()
 {
-  if (pointLight != undefined) {
-    pointLight.position.set(-10 * Math.cos(0.01 * t), 0, -7 + 2 * Math.cos(0.02 * t));
+  if (pointLightSun != undefined) {
+    pointLightSun.position.set((((200 * time / DAY_PERIOD) + 200) % 200) - 100, 0, -5 + 5 * Math.cos(time * 2 * Math.PI / DAY_PERIOD));
+    pointLightMoon.position.set((((200 * time / DAY_PERIOD) + 100) % 200) - 100, 0, -5 - 5 * Math.cos(time * 2 * Math.PI / DAY_PERIOD));
   }
 }
 
