@@ -190,7 +190,7 @@ function checkBuoyStatus(buoy, index, buoyY) {
   else if (buoyY > -9.5)  {
     buoy.material.color.setHex(0xff0000);
     buoysTickCount = 0;
-    buoysActive[ii] = false;
+    buoysActive[index] = false;
   }
 }
 
