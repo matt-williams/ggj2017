@@ -17,7 +17,9 @@ var WAVE_PERIOD_FACTOR = 0.15;
 var WAVE_GAUSSIAN_RADIUS = 5;
 var velocity, fields, field;
 
+var TICK_COUNT_REQ = 10;
 var buoys;
+var buoysTickCount;
 var buoysActive;
 
 var touch = document.getElementById("container");
@@ -90,6 +92,11 @@ function isTappable(x, z) {
 
 // Utility function to load barriers for the map
 function loadBarriers() {
+  if (map.barriers == undefined) {
+    map.barriers = [];
+    return;
+  }
+
   var barrierGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
   var barrierMaterial = new THREE.MeshPhongMaterial({color: 0xffff00, shininess: 75});
 
@@ -106,6 +113,11 @@ function loadBarriers() {
 
 // Utility function to load untappables for the map
 function loadUntappables() {
+  if (map.untappables == undefined) {
+    map.untappables = [];
+    return;
+  }
+
   var untappableGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
   var untappableMaterial = new THREE.MeshLambertMaterial({color: 0x604000, opacity: 0.25, transparent: true});
 
@@ -123,16 +135,23 @@ function loadUntappables() {
 // Utility function to load barrier for the map
 function loadBuoys() {
   buoys = [];
+  buoysTickCount = [];
   buoysActive = [];
 
+  if (map.buoys == undefined) {
+    map.buoys = [];
+    return;
+  }
+
   var buoyGeometry = new THREE.ConeBufferGeometry(0.5, 2.5, 100);
-  var buoyMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, shininess: 100});
 
   for (var ii = 0; ii < map.buoys.length; ii++) {
     var buoy = map.buoys[ii];
+    var buoyMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, shininess: 100});
     var buoyMesh = new THREE.Mesh(buoyGeometry, buoyMaterial);
     buoyMesh.position.set((buoy.x / 10) - (WORLD_WIDTH / 2), -10, (buoy.z / 10) - (WORLD_HEIGHT / 2));
     buoys[ii] = buoyMesh;
+    buoysTickCount[ii] = 0;
     buoysActive[ii] = false;
     scene.add(buoyMesh);
   }
@@ -155,24 +174,29 @@ function checkBuoyStatus(buoy, index, buoyY) {
     return;
   }
 
-  if (buoyY < -11.5) {
-    buoy.material.color.setHex(0x00ff00);
-    buoysActive[index] = true;
+  if (buoyY < -11) {
+    buoysTickCount[index]++;
 
-    if (success()) {
-      transitioning = true;
-      setTimeout(function() {loadScene((currentScene + 1) % maps.length);}, 500);
+    if (buoysTickCount[index] > TICK_COUNT_REQ) {
+      buoy.material.color.setHex(0x00ff00);
+      buoysActive[index] = true;
+
+      if (success()) {
+        transitioning = true;
+        setTimeout(function() {loadScene((currentScene + 1) % maps.length);}, 500);
+      }
     }
   }
   else if (buoyY > -9.5)  {
     buoy.material.color.setHex(0xff0000);
+    buoysTickCount = 0;
     buoysActive[ii] = false;
   }
 }
 
 // Initialize, load and animate the first scene
 init();
-loadScene(0);
+loadScene(2);
 animate();
 
 // Initialize aspects of the game that persist across scenes
