@@ -54,7 +54,7 @@ function init() {
   scene = new THREE.Scene();
 
   var scaleX = (window.innerWidth > window.innerHeight) ? window.innerWidth / window.innerHeight : 1;
-  var scaleY = (window.innerHeight > window.innerWight) ? window.innerHeight / window.innerWidth : 1;
+  var scaleY = (window.innerHeight > window.innerWidth) ? window.innerHeight / window.innerWidth : 1;
   camera = new THREE.OrthographicCamera(-11 * scaleX, 11 * scaleX, 11 * scaleY, -11 * scaleY, 1, 10000);
   camera.rotation.x = -Math.PI / 2;
   camera.position.set(0, 5, 0);
@@ -82,6 +82,17 @@ function init() {
   document.addEventListener("mousedown", onDocumentTouchStart, false);
   document.addEventListener("mousemove", onDocumentTouchMove, false);
   document.addEventListener("mouseup", onDocumentTouchStop, false);
+
+  window.addEventListener("resize", function() {
+    var scaleX = (window.innerWidth > window.innerHeight) ? window.innerWidth / window.innerHeight : 1;
+    var scaleY = (window.innerHeight > window.innerWidth) ? window.innerHeight / window.innerWidth : 1;
+    camera.left = -11 * scaleX;
+    camera.right = 11 * scaleX;
+    camera.top = 11 * scaleY;
+    camera.bottom = -11 * scaleY;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }, false);
 }
 
 function animate() {
