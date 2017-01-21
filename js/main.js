@@ -55,34 +55,29 @@ function updateTouchCoords(event) {
   var x = event.clientX || event.pageX;
   var y = event.clientY || event.pageY;
 
-  console.log("event.type: " + event.type);
-  console.log("clientX: " + event.clientX);
-  console.log("pageX: " + event.pageX);
-  console.log("x: " + x);
-  console.log("clientY: " + event.clientY);
-  console.log("pageY: " + event.pageY);
-  console.log("y: " + y);
+  if (x.isNaN() || y.isNaN()) {
+    return false;
+  } else {
+    mouse.x = x / window.innerWidth * 2 - 1;
+    mouse.y = 1 - y / window.innerHeight * 2;
+    raycaster.setFromCamera(mouse, camera);
+    var intersects = raycaster.intersectObjects([simpleMesh]);
 
-  mouse.x = x / window.innerWidth * 2 - 1;
-  mouse.y = 1 - y / window.innerHeight * 2;
-  raycaster.setFromCamera(mouse, camera);
-  var intersects = raycaster.intersectObjects([simpleMesh]);
+    if (intersects.length > 0) {
+      touchCoordX = intersects[0].point.x / (WIDTH / 10) + 0.5;
+      touchCoordY = intersects[0].point.z / (HEIGHT / 10) + 0.5;
+      touchDuration = Math.PI / WAVE_PERIOD_FACTOR;
 
-  if (intersects.length > 0) {
-    touchCoordX = intersects[0].point.x / (WIDTH / 10) + 0.5;
-    touchCoordY = intersects[0].point.z / (HEIGHT / 10) + 0.5;
-    touchDuration = Math.PI / WAVE_PERIOD_FACTOR;
+      if (event.type == "touchstart" || event.type == "mousedown") {
+        playSound(dropSound);
+      } else if (swipeDuration <= 0) {
+        playSound(swipeSound);
+        swipeDuration = 30;
+      }
 
-    if (event.type == "touchstart" || event.type == "mousedown") {
-      playSound(dropSound);
-    } else if (swipeDuration <= 0) {
-      playSound(swipeSound);
-      swipeDuration = 30;
+      return true;
     }
-
-    return true;
   }
-
   return false;
 }
 
