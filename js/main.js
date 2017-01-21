@@ -65,8 +65,8 @@ function updateTouchCoords(event) {
   for (var i = 0; i < event.changedTouches.length; i++) {console.log("touches[" + i + "]: " + event.changedTouches[i].type);}
   console.log("window.innerWidth: " + window.innerWidth);
   console.log("window.innerHeight: " + window.innerHeight);
-  mouse.x = event.clientX / window.innerWidth * 2 - 1;
-  mouse.y = 1 - event.clientY / window.innerHeight * 2;
+  mouse.x = event.pageX / window.innerWidth * 2 - 1;
+  mouse.y = 1 - event.pageY / window.innerHeight * 2;
   console.log("mouse.x: " + mouse.x);
   console.log("mouse.y: " + mouse.y);
   raycaster.setFromCamera(mouse, camera);
