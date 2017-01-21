@@ -2,6 +2,7 @@ var scene, camera, renderer;
 var geometry, material, mesh;
 var pointLight;
 var simplePlaneMesh;
+var bouy;
 
 var t = 0;
 var map = maps[0];
@@ -122,6 +123,11 @@ function init() {
   simpleMesh = new THREE.Mesh(simpleGeometry, new THREE.Material());
   simpleMesh.position.set(0, -10, 0);
 
+  createBouy(0, 0);
+  //createBouy(5, 5);
+  console.log("bouy1: " + translate(0, 0));
+  //console.log("bouy2: " + translate(5, 5));
+
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -140,6 +146,21 @@ function init() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   }, false);
+}
+
+function createBouy(x, z) {
+  
+  var cone = new THREE.ConeBufferGeometry(0.5, 2.5, 100);
+  var material = new THREE.MeshPhongMaterial({color: 0xff0000, shininess: 100});
+  bouy = new THREE.Mesh(cone, material);
+  bouy.position.set(x, -7, z);
+  scene.add(bouy);
+
+}
+
+function translate(x, z) {
+  var position = (Math.round((x + 10)/20) * WIDTH) + (Math.round((z + 10)/20 * HEIGHT) * WIDTH);
+  return position;
 }
 
 function animate() {
@@ -224,6 +245,14 @@ function animate() {
     vertices[j + 1] = field[i];
   }
   geometry.attributes.position.needsUpdate = true;
+
+  var bouyY = field[translate(0,0)] - 10;
+  bouy.position.set(0, bouyY, 0);
+//  var bouyNormalX = normals[translate(0,0) * 3];
+//  var bouyNormalY = normals[(translate(0,0) * 3) + 1];
+//  var bouyNormalZ = normals[(translate(0,0) * 3) + 2];
+//  bouy.lookAt(new THREE.Vector3(bouyNormalX,bouyNormalY,bouyNormalZ));
+//  console.log(bouyNormalX + " " + bouyNormalY + " " + bouyNormalZ);
 
   if (pointLight != undefined) {
     pointLight.position.set(-10 * Math.cos(0.01 * t), 0, -7 + 2 * Math.cos(0.02 * t));
