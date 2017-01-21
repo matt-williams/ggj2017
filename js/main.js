@@ -453,7 +453,7 @@ function updateField() {
         if (x > 0) { average += field[index - 1]; denominator++; }
         if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
 
-        average /= denominator;
+        average /= 4;;
         velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
         newField[index] = height + velocity[index];
       }
@@ -474,7 +474,7 @@ function updateField() {
         if (x > 0) { average += field[index - 1]; denominator++; }
         if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
 
-        average /= denominator;
+        average /= 4;;
         velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
         newField[index] = height + velocity[index];
       }
