@@ -5,7 +5,7 @@ var pointLight;
 var t = 0;
 var WIDTH = 200;
 var HEIGHT = 200;
-var DAMPING = 0.999;
+var DAMPING = 0.99995;
 var velocity = new Float64Array(WIDTH * HEIGHT);
 var fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
 var field = fields[0];
@@ -59,45 +59,53 @@ function animate() {
   for (var z = -5; z <= 5; z++) {
     for (var x = -5; x <= 5; x++) {
       if ((x + midX > 0) && (x + midX < WIDTH) && (z + midZ > 0) && (z + midZ < HEIGHT)) {
-        velocity[x + midX + (z + midZ) * WIDTH] += 0.3 * Math.exp((-x*x-z*z)/2) * Math.sin(t * 0.15);
+        velocity[x + midX + (z + midZ) * WIDTH] += 0.3 * Math.exp(-0.8 * (x * x + z * z)) * Math.sin(t * 0.15);
       }
     }
   }
   t++;
   var newField = fields[1];
-  for (var z = 0; z < HEIGHT; z += HEIGHT - 1) {
-    for (var x = 0; x < WIDTH; x++) {
-      var height = field[x + z * WIDTH];
-      var average = 0;
-      var denominator = 0;
-      if (z > 0) { average += field[x + (z - 1) * WIDTH]; denominator++; }
-      if (z < HEIGHT - 1) { average += field[x + (z + 1) * WIDTH]; denominator++; }
-      if (x > 0) { average += field[x - 1 + z * WIDTH]; denominator++; }
-      if (x < WIDTH - 1) { average += field[x + 1 + z * WIDTH]; denominator++; }
-      average = average / denominator;
-      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * denominator / 2) * DAMPING;
-      newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
-    }
-  }
-  for (var x = 0; x < WIDTH; x += WIDTH - 1) {
-    for (var z = 1; z < HEIGHT - 1; z++) {
-      var height = field[x + z * WIDTH];
-      var average = 0;
-      var denominator = 0;
-      if (z > 0) { average += field[x + (z - 1) * WIDTH]; denominator++; }
-      if (z < HEIGHT - 1) { average += field[x + (z + 1) * WIDTH]; denominator++; }
-      if (x > 0) { average += field[x - 1 + z * WIDTH]; denominator++; }
-      if (x < WIDTH - 1) { average += field[x + 1 + z * WIDTH]; denominator++; }
-      average = average / denominator;
-      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * denominator / 2) * DAMPING;
-      newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
-    }
-  }
+//  for (var z = 0; z < HEIGHT; z += HEIGHT - 1) {
+//    for (var x = 0; x < WIDTH; x++) {
+//      var height = field[x + z * WIDTH];
+//      var average = 0;
+//      var denominator = 0;
+//      if (z > 0) { average += field[x + (z - 1) * WIDTH]; denominator++; }
+//      if (z < HEIGHT - 1) { average += field[x + (z + 1) * WIDTH]; denominator++; }
+//      if (x > 0) { average += field[x - 1 + z * WIDTH]; denominator++; }
+//      if (x < WIDTH - 1) { average += field[x + 1 + z * WIDTH]; denominator++; }
+//      average = average / denominator;
+//      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * denominator / 2) * DAMPING;
+//      newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
+//    }
+//  }
+//  for (var x = 0; x < WIDTH; x += WIDTH - 1) {
+//    for (var z = 1; z < HEIGHT - 1; z++) {
+//      var height = field[x + z * WIDTH];
+//      var average = 0;
+//      var denominator = 0;
+//      if (z > 0) { average += field[x + (z - 1) * WIDTH]; denominator++; }
+//      if (z < HEIGHT - 1) { average += field[x + (z + 1) * WIDTH]; denominator++; }
+//      if (x > 0) { average += field[x - 1 + z * WIDTH]; denominator++; }
+//      if (x < WIDTH - 1) { average += field[x + 1 + z * WIDTH]; denominator++; }
+//      average = average / denominator;
+//      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * denominator / 2) * DAMPING;
+//      newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
+//    }
+//  }
+  var K = 0.1;
   for (var z = 1; z < HEIGHT - 1; z++) {
     for (var x = 1; x < WIDTH - 1; x++) {
       var height = field[x + z * WIDTH];
-      var average = (field[x + (z - 1) * WIDTH] + field[x + (z + 1) * WIDTH] + field[x - 1 + z * WIDTH] + field[x + 1 + z * WIDTH]) / 4;
-      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + (average - height) * 2) * DAMPING;
+      var force = K * ((field[x + (z - 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[x + (z - 1) * WIDTH] - height, 2))) +
+                       (field[x + (z + 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[x + (z + 1) * WIDTH] - height, 2))) +
+                       (field[(x - 1) + z * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x - 1) + z * WIDTH] - height, 2))) +
+                       (field[(x + 1) + z * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x + 1) + z * WIDTH] - height, 2))));
+      force += Math.sqrt(0.5) * K * ((field[(x + 1) + (z - 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x + 1) + (z - 1) * WIDTH] - height, 2))) +
+                                     (field[(x - 1) + (z + 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x - 1) + (z + 1) * WIDTH] - height, 2))) +
+                                     (field[(x - 1) + (z - 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x - 1) + (z - 1) * WIDTH] - height, 2))) +
+                                     (field[(x + 1) + (z + 1) * WIDTH] - height) * (1 - 1 / Math.sqrt(1 + Math.pow(field[(x + 1) + (z + 1) * WIDTH] - height, 2))));
+      velocity[x + z * WIDTH] = (velocity[x + z * WIDTH] + force) * DAMPING;
       newField[x + z * WIDTH] = height + velocity[x + z * WIDTH];
     }
   }
