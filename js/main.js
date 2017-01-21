@@ -26,6 +26,8 @@ var buoysTickCount;
 var buoysActive;
 var bellDurations;
 
+var gates;
+
 var touch = document.getElementById("container");
 var touchCoordX = 0;
 var touchCoordY = 0;
@@ -51,7 +53,6 @@ var mouse = new THREE.Vector2();
 var barrierCheck = new THREE.Vector2();
 
 function updateTouchCoords(event) {
-  
   var x = event.clientX || event.pageX;
   var y = event.clientY || event.pageY;
 
@@ -78,6 +79,7 @@ function updateTouchCoords(event) {
       return true;
     }
   }
+
   return false;
 }
 
@@ -111,6 +113,10 @@ function onError( error ) {
 function isBarrier(x, z) {
   for (var ii = 0; ii < map.barriers.length; ii++) {
     var barrier = map.barriers[ii];
+
+    if (!barriers[ii].visible) {
+      continue;
+    }
 
     if (barrier.rotation) {
       var amX = x - barrier.aX;
@@ -224,6 +230,7 @@ function loadBarriers() {
     }
 
     barriers[ii] = barrierMesh;
+    barriers[ii].gate = barrier.gate;
     barriersMovement[ii] = barrier.movement;
 
     if (barriersMovement[ii]) {
@@ -316,7 +323,7 @@ function loadUntappables() {
   }
 }
 
-// Utility function to load barrier for the map
+// Utility function to load buoys for the map
 function loadBuoys() {
   buoys = [];
   buoysTickCount = [];
@@ -347,6 +354,35 @@ function loadBuoys() {
     buoysActive[ii] = false;
     bellDurations[ii] = 0;
     scene.add(buoyMesh);
+  }
+}
+
+// Utility function to load gates for the map
+function loadGates() {
+  gates = [];
+
+  if (map.gates == undefined) {
+    map.loadGates = [];
+    return;
+  }
+
+  var gateGeometry = new THREE.ConeBufferGeometry(0.5, 2.5, 100);
+
+  for (var ii = 0; ii < map.gates.length; ii++) {
+    var gate = map.gates[ii];
+    var gateMaterial = new THREE.MeshPhongMaterial({color: 0xffcc88, shininess: 100});
+    var gateMesh = new THREE.Mesh(gateGeometry, gateMaterial);
+    gates[ii] = gateMesh;
+    gateMesh.position.set((gate.x / 10) - (WORLD_WIDTH / 2), -10, (gate.z / 10) - (WORLD_HEIGHT / 2));
+
+    if (gates[ii].movement) {
+      gates[ii].movement.x0 = gate.x;
+      gates[ii].movement.z0 = gate.z;
+    }
+
+    gates[ii].count = 0;
+    gates[ii].bellDuration = 0;
+    scene.add(gateMesh);
   }
 }
 
@@ -397,6 +433,49 @@ function checkBuoyStatus(buoy, index, buoyY) {
   }
 }
 
+// Utility function to check gate status, update colour, and maybe deactivate barriers
+function checkGateStatus(gate, index, gateY) {
+  var gateOnSensitivity = map.gates[index].onSensitivity || -11;
+  var gateOffSensitivity = map.gates[index].offSensitivity || -9;
+  //console.log(index, gateY, gatesOnSensitivity, gates[index].count);
+
+  if (gateY < gateOnSensitivity) {
+    gates[index].count++;
+
+    if (gates[index].count > TICK_COUNT_REQ) {
+      if (gates[index].bellDuration <= 0) {
+        playSound(bellSound);
+        gates[index].bellDuration = 100;
+      }
+
+      gate.material.color.setHex(0xff0088);
+
+      // Make certain barriers inactive
+      for (var ii = 0; ii < barriers.length; ii++) {
+        var barrier = barriers[ii];
+
+        if (barrier.gate == index) {
+          barrier.visible = false;
+        }
+      }
+    } else {
+      gate.material.color.setHex(0xff0088);
+    }
+  } else if (gateY > gateOffSensitivity)  {
+    gate.material.color.setHex(0xffcc88);
+    gates[index].count = 0;
+
+    // Make the barriers active again
+    for (var ii = 0; ii < barriers.length; ii++) {
+      var barrier = barriers[ii];
+
+      if (barrier.gate == index) {
+        barrier.visible = true;
+      }
+    }
+  }
+}
+
 // Function to load sounds
 function loadSounds() {
   var request = new XMLHttpRequest();
@@ -443,7 +522,7 @@ function playSound(buffer) {
 
 // Initialize, load and animate the first scene
 init();
-loadScene(17);
+loadScene(0);
 animate();
 
 // Initialize aspects of the game that persist across scenes
@@ -524,6 +603,7 @@ function loadScene(sceneNumber) {
   loadPortals();
   loadUntappables();
   loadBuoys();
+  loadGates();
 
   currentScene = sceneNumber;
   touched = false;
@@ -795,6 +875,22 @@ function rockBuoys(normals) {
   }
 }
 
+function rockGates(normals) {
+  for (var ii = 0; ii < gates.length; ii++) {
+    var gate = gates[ii];
+    var fieldIndex = translate(gate.position.x, gate.position.z);
+    var gateY = field[fieldIndex] - 10;
+    gate.position.set(gate.position.x, -10, gate.position.z);
+
+    var gateNormalX = normals[fieldIndex * 3];
+    var gateNormalY = normals[fieldIndex * 3 + 1];
+    var gateNormalZ = normals[fieldIndex * 3 + 2];
+    gate.lookAt(new THREE.Vector3(10 * gateNormalX, 25 * gateNormalY - 100 + gateY, 10 * gateNormalZ));
+
+    checkGateStatus(gate, ii, gateY);
+  }
+}
+
 // Animate a frame
 function animate() {
   if (paused) {
@@ -824,7 +920,7 @@ function animate() {
 
   updateField();
 
-  // Calculate the surface normals for graphics and rocking buoys
+  // Calculate the surface normals for graphics, and rocking buoys and gates
   var normals = geometry.attributes.normal.array;
 
   for (var z = 1; z < HEIGHT - 1; z++) {
@@ -850,8 +946,9 @@ function animate() {
 
   geometry.attributes.position.needsUpdate = true;
 
-  // Make buoys rock
+  // Make buoys and gates rock
   rockBuoys(normals);
+  rockGates(normals);
 
   // Update the light source(s)
   updateLightSource();

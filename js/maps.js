@@ -259,6 +259,31 @@ var maps = [
     ],
     collectors: [
       {x: 75, z: 0, dx: 2, dz: 50, capacity: 20, yield: -1.8}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 100, dz: 50}
+    ]
+  },
+  {
+    scene: 18,
+    untappables: [
+      {x: 40, z: 60, dx: 40, dz: 40}
+    ],
+    size: {dx: 200, dz: 200},
+    barriers: [
+      {x: 40, z: 60, dx: 10, dz: 40},
+      {x: 50, z: 60, dx: 30, dz: 10},
+      {x: 50, z: 90, dx: 30, dz: 10},
+      {x: 70, z: 70, dx: 10, dz: 20, gate: 0}
+    ],
+    buoys: [
+      {x: 60, z: 80}
+    ],
+    gates: [
+      {x: 20, z: 80}
+    ],
+    untappables: [
+      {x: 40, z: 60, dx: 40, dz: 40}
     ]
   }
 ]
