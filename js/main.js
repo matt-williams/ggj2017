@@ -61,7 +61,7 @@ function updateTouchCoords(event) {
     touchCoordY = intersects[0].point.z / (HEIGHT / 10) + 0.5;
     touchDuration = Math.PI / WAVE_PERIOD_FACTOR;
 
-    if (event.type == "mousedown") {
+    if (event.type == "touchstart" || "mousedown") {
       playSound(dropSound);
     } else if (swipeDuration <= 0) {
       playSound(swipeSound);
@@ -76,7 +76,7 @@ function updateTouchCoords(event) {
 
 // Event handlers
 function onDocumentTouchStart( event ) {
-  touched = touched || updateTouchCoords(event);
+  touched = updateTouchCoords(event) || touched;
 }
 
 function onDocumentTouchMove( event ) {
@@ -363,6 +363,10 @@ function init() {
   document.addEventListener("mousemove", onDocumentTouchMove, false);
   document.addEventListener("mouseup", onDocumentTouchStop, false);
   document.addEventListener("keypress", onDocumentKeyPress, false);
+  document.addEventListener("touchstart", onDocumentTouchStart, false);
+  document.addEventListener("touchmove", onDocumentTouchMove, false);
+  document.addEventListener("touchend", onDocumentTouchStop, false);
+  document.addEventListener("touchforcechange", onDocumentKeyPress, false);
 
   window.addEventListener("resize", function() {
     var scaleX = (window.innerWidth > window.innerHeight) ? window.innerWidth / window.innerHeight : 1;
