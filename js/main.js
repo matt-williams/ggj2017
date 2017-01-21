@@ -51,28 +51,10 @@ var mouse = new THREE.Vector2();
 var barrierCheck = new THREE.Vector2();
 
 function updateTouchCoords(event) {
-  console.log("event.type: " + event.type);
-  console.log("event.screenX: " + event.screenX);
-  console.log("event.screenY: " + event.screenY);
-  console.log("event.pageX: " + event.pageX);
-  console.log("event.pageY: " + event.pageY);
-  console.log("event.clientX: " + event.clientX);
-  console.log("event.clientY: " + event.clientY);
-  console.log("event.touches.length: " + event.touches.length);
-  for (var i = 0; i < event.touches.length; i++) {console.log("event.touches[" + i + "]: " + event.touches[i].type);}
-  console.log("event.changedTouches.length: " + event.changedTouches.length);
-  for (var i = 0; i < event.length; i++) {console.log("event[" + i + "]: " + event[i]);}
-  for (var i = 0; i < event.changedTouches.length; i++) {console.log("touches[" + i + "]: " + event.changedTouches[i].type);}
-  console.log("window.innerWidth: " + window.innerWidth);
-  console.log("window.innerHeight: " + window.innerHeight);
   mouse.x = event.pageX / window.innerWidth * 2 - 1;
   mouse.y = 1 - event.pageY / window.innerHeight * 2;
-  console.log("mouse.x: " + mouse.x);
-  console.log("mouse.y: " + mouse.y);
   raycaster.setFromCamera(mouse, camera);
   var intersects = raycaster.intersectObjects([simpleMesh]);
-  console.log("mouse: " + mouse);
-  console.log("intersects.length: " + intersects.length);
 
   if (intersects.length > 0) {
     touchCoordX = intersects[0].point.x / (WIDTH / 10) + 0.5;
