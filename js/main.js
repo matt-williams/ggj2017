@@ -57,10 +57,13 @@ function animate() {
 
   var midX = Math.floor(touchCoordX * WIDTH);
   var midZ = Math.floor(touchCoordY * HEIGHT);
-  for (var z = -5; z <= 5; z++) {
-    for (var x = -5; x <= 5; x++) {
+  for (var z = -10; z <= 10; z++) {
+    for (var x = -10; x <= 10; x++) {
       if ((x + midX > 0) && (x + midX < WIDTH) && (z + midZ > 0) && (z + midZ < HEIGHT)) {
-        velocity[x + midX + (z + midZ) * WIDTH] += 0.3 * Math.exp(-0.8 * (x * x + z * z)) * Math.sin(t * 0.15);
+        var r = Math.sqrt(x * x + z * z);
+        var clampedR = Math.max(Math.min((r - 8) * , Math.PI / 2), 0);
+        var effect = Math.cos(clampedR);
+        field[x + midX + (z + midZ) * WIDTH] = field[x + midX + (z + midZ) * WIDTH] * (1 - effect) + effect * Math.sin(t * 0.15);
       }
     }
   }
