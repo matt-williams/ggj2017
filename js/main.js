@@ -107,6 +107,16 @@ function init() {
     scene.add(barrierMesh);
   }
 
+  var untappableGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+  var untappableMaterial = new THREE.MeshLambertMaterial({color: 0x604000, opacity: 0.25, transparent: true});
+  for (var ii = 0; ii < map.untappables.length; ii++) {
+    var untappable = map.untappables[ii];
+    var untappableMesh = new THREE.Mesh(untappableGeometry, untappableMaterial);
+    untappableMesh.scale.set(untappable.dx / 10, 2, untappable.dz / 10);
+    untappableMesh.position.set((untappable.x + untappable.dx / 2) / 10 - 10, -10, (untappable.z + untappable.dz / 2) / 10 - 10);
+    scene.add(untappableMesh);
+  }
+
   var simpleGeometry = new THREE.PlaneBufferGeometry(20, 20);
   simpleGeometry.rotateX(-Math.PI / 2);
   simpleMesh = new THREE.Mesh(simpleGeometry, new THREE.Material());
