@@ -124,13 +124,56 @@ function isBarrier(x, z) {
           (amX * adX + amZ * adZ > 0) && (amX * adX + amZ * adZ < adX * adX + adZ * adZ)) {
         return true;
       }
-    } else {
+    } else if (!barrier.movement) {
       if ((x >= barrier.x) &&
-          (x < barrier.x + barrier.dx) && 
+          (x < barrier.x + barrier.dx) &&
           (z >= barrier.z) &&
           (z < barrier.z + barrier.dz)) {
         return true;
       }
+    } else {
+      var barrierMesh = barriers[ii];
+      var bX = translateX(barrierMesh.position.x);
+      var bZ = translateZ(barrierMesh.position.z);
+
+      if ((x >= bX - barrier.dx) &&
+          (x < bX) &&
+          (z >= bZ - barrier.dz / 2) &&
+          (z < bZ + barrier.dz / 2)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// Utility function to determine whether a point is part of a collector
+function isCollector(x, z) {
+  for (var ii = 0; ii < map.collectors.length; ii++) {
+    var collector = map.collectors[ii];
+
+    if ((x >= collector.x) &&
+        (x < collector.x + collector.dx) &&
+        (z >= collector.z) &&
+        (z < collector.z + collector.dz)) {
+      return collector;
+    }
+  }
+
+  return false;
+}
+
+// Utility function to determine whether a point is part of a portal
+function isPortal(x, z) {
+  for (var ii = 0; ii < map.portals.length; ii++) {
+    var portal = map.portals[ii];
+
+    if ((x >= portal.x) &&
+        (x < portal.x + portal.dx) &&
+        (z >= portal.z) &&
+        (z < portal.z + portal.dz)) {
+      return portal;
     }
   }
 
@@ -183,6 +226,11 @@ function loadBarriers() {
     barriers[ii] = barrierMesh;
     barriersMovement[ii] = barrier.movement;
 
+    if (barriersMovement[ii]) {
+      barriersMovement[ii].x0 = barrier.x + dx2;
+      barriersMovement[ii].z0 = barrier.z + dz2;
+    }
+
     scene.add(barrierMesh);
 
     // Do some work here to speed up handling for rotated barriers
@@ -198,6 +246,52 @@ function loadBarriers() {
       //barrier.cZ = midZ - dx2 * sinR + dz2 * cosR;
       barrier.dZ = midZ + dx2 * sinR + dz2 * cosR;
     }
+  }
+}
+
+// Utility function to load collectors for the map
+function loadCollectors() {
+  if (map.collectors == undefined) {
+    map.collectors = [];
+    return;
+  }
+
+  var collectorGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+  var collectorMaterial = new THREE.MeshPhongMaterial({color: 0xaa6622, shininess: 100});
+
+  for (var ii = 0; ii < map.collectors.length; ii++) {
+    var collector = map.collectors[ii];
+    collector.cumTotal = 0;
+    collector.currentField = null;
+    var midX = collector.x + (collector.dx / 2);
+    var midZ = collector.z + (collector.dz / 2);
+    var collectorMesh = new THREE.Mesh(collectorGeometry, collectorMaterial);
+    collectorMesh.scale.set(collector.dx / 10, 2, collector.dz / 10);
+    collectorMesh.position.set(midX / 10 - (WORLD_WIDTH / 2), -10, midZ / 10 - (WORLD_HEIGHT / 2));
+    scene.add(collectorMesh);
+  }
+}
+
+// Utility function to load portals for the map
+function loadPortals() {
+  if (map.portals == undefined) {
+    map.portals = [];
+    return;
+  }
+
+  var portalGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+  var portalMaterial = new THREE.MeshPhongMaterial({color: 0xff00ff, shininess: 100});
+
+  for (var ii = 0; ii < map.portals.length; ii++) {
+    var portal = map.portals[ii];
+    var dx2 = portal.dx / 2;
+    var dz2 = portal.dz / 2;
+    var midX = portal.x + portal.px + dx2;
+    var midZ = portal.z + portal.pz + dz2;
+    var portalMesh = new THREE.Mesh(portalGeometry, portalMaterial);
+    portalMesh.scale.set(portal.dx / 10, 2, portal.dz / 10);
+    portalMesh.position.set(midX / 10 - (WORLD_WIDTH / 2), -10, midZ / 10 - (WORLD_HEIGHT / 2));
+    scene.add(portalMesh);
   }
 }
 
@@ -242,6 +336,13 @@ function loadBuoys() {
     var buoyMesh = new THREE.Mesh(buoyGeometry, buoyMaterial);
     buoyMesh.position.set((buoy.x / 10) - (WORLD_WIDTH / 2), -10, (buoy.z / 10) - (WORLD_HEIGHT / 2));
     buoys[ii] = buoyMesh;
+    buoys[ii].movement = buoy.movement;
+
+    if (buoys[ii].movement) {
+      buoys[ii].movement.x0 = buoy.x;
+      buoys[ii].movement.z0 = buoy.z;
+    }
+
     buoysTickCount[ii] = 0;
     buoysActive[ii] = false;
     bellDurations[ii] = 0;
@@ -342,7 +443,7 @@ function playSound(buffer) {
 
 // Initialize, load and animate the first scene
 init();
-loadScene(0);
+loadScene(17);
 animate();
 
 // Initialize aspects of the game that persist across scenes
@@ -419,6 +520,8 @@ function loadScene(sceneNumber) {
   simpleMesh.position.set(0, -10, 0);
 
   loadBarriers();
+  loadCollectors();
+  loadPortals();
   loadUntappables();
   loadBuoys();
 
@@ -428,10 +531,30 @@ function loadScene(sceneNumber) {
   paused = false;
 }
 
-// Function to get from coordinates of an object to the grid index
+// Functions to get from coordinates of an object to the grid index
+function translateX(x) {
+  var trX = Math.round(x + (WORLD_WIDTH / 2)) * 10;
+  return trX;
+}
+
+function translateZ(z) {
+  var trZ = Math.round(z + (WORLD_HEIGHT / 2)) * 10;
+  return trZ;
+}
+
 function translate(x, z) {
-  var position = (Math.round(x + (WORLD_WIDTH / 2)) * 10) + (Math.round(z + (WORLD_HEIGHT / 2)) * 10 * WIDTH);
+  var position = translateX(x) + (translateZ(z) * WIDTH);
   return position;
+}
+
+function untranslateX(x) {
+  var unX = (x / 10) - (WORLD_WIDTH / 2);
+  return unX;
+}
+
+function untranslateZ(z) {
+  var unZ = (z / 10) - (WORLD_HEIGHT / 2);
+  return unZ;
 }
 
 // Utility function to handle touches, which may come from the mouse or remote sources
@@ -449,6 +572,26 @@ function handleTouch(touchX, touchZ) {
   }
 }
 
+// Function to handle updating a collector
+function updateCollector(collector, velocity, currentField) {
+  if (!collector.currentField) {
+    collector.cumTotal += velocity * velocity;
+
+    if (collector.cumTotal > collector.capacity * collector.capacity) {
+      collector.currentField = field;
+    }
+  } else {
+    if (collector.currentField == currentField) {
+      collector.cumTotal = -5000;
+      return true;
+    } else if (collector.cumTotal < collector.capacity * collector.capacity) {
+      collector.currentField = null;
+    }
+  }
+
+  return false;
+}
+
 // Function to handle updating the field of vertices
 function updateField() {
   var newField = fields[1];
@@ -462,13 +605,35 @@ function updateField() {
         var average = 0;
         var denominator = 0;
 
-        if (z > 0) { average += field[index - WIDTH]; denominator++; }
-        if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
-        if (x > 0) { average += field[index - 1]; denominator++; }
-        if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+        var portal = isPortal(x, z);
 
-        average /= 4;;
-        velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+        if (portal) {
+          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
+          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
+          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
+          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
+          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+        } else {
+          if (z > 0) { average += field[index - WIDTH]; denominator++; }
+          if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
+          if (x > 0) { average += field[index - 1]; denominator++; }
+          if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+        }
+
+        var collector = isCollector(x, z);
+        average /= 4;
+        var newVelocity = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+
+        if (collector) {
+          if (updateCollector(collector, newVelocity, newField)) {
+            velocity[index] = collector.yield;
+          } else {
+            velocity[index] = 0;
+          }
+        } else {
+          velocity[index] = newVelocity;
+        }
+
         newField[index] = height + velocity[index];
       }
     }
@@ -483,13 +648,35 @@ function updateField() {
         var average = 0;
         var denominator = 0;
 
-        if (z > 0) { average += field[index - WIDTH]; denominator++; }
-        if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
-        if (x > 0) { average += field[index - 1]; denominator++; }
-        if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+        var portal = isPortal(x, z);
 
-        average /= 4;;
-        velocity[index] = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+        if (portal) {
+          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
+          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
+          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
+          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
+          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+        } else {
+          if (z > 0) { average += field[index - WIDTH]; denominator++; }
+          if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
+          if (x > 0) { average += field[index - 1]; denominator++; }
+          if (x < WIDTH - 1) { average += field[index + 1]; denominator++; }
+        }
+
+        var collector = isCollector(x, z);
+        average /= 4;
+        var newVelocity = (velocity[index] + (average - height) * denominator / 2) * DAMPING;
+
+        if (collector) {
+          if (updateCollector(collector, newVelocity, newField)) {
+            velocity[index] = collector.yield;
+          } else {
+            velocity[index] = 0;
+          }
+        } else {
+          velocity[index] = newVelocity;
+        }
+
         newField[index] = height + velocity[index];
       }
     }
@@ -501,9 +688,33 @@ function updateField() {
       if (!isBarrier(x, z)) {
         var index = x + z * WIDTH;
         var height = field[index];
-        var average = (field[index - 1] + field[index + 1] + field[index - WIDTH] + field[index + WIDTH]) / 4;
+        var average = 0;
 
-        velocity[index] = (velocity[index] + ((average - height) * 2)) * DAMPING;
+        var portal = isPortal(x, z);
+
+        if (portal) {
+          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
+          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
+          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
+          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
+          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+        } else {
+          average += (field[index - 1] + field[index + 1] + field[index - WIDTH] + field[index + WIDTH]) / 4;
+        }
+
+        var collector = isCollector(x, z);
+        var newVelocity = (velocity[index] + (average - height) * 2) * DAMPING;
+
+        if (collector) {
+          if (updateCollector(collector, newVelocity, newField)) {
+            velocity[index] = collector.yield;
+          } else {
+            velocity[index] = 0;
+          }
+        } else {
+          velocity[index] = newVelocity;
+        }
+
         newField[index] = height + velocity[index];
       }
     }
@@ -531,15 +742,56 @@ function updateBarriers() {
     if (barriersMovement[ii]) {
       var barrier = barriers[ii];
       var target = barriersMovement[ii];
+      var bX = untranslateX(target.x0);
+      var bZ = untranslateX(target.z0);
+      var tX = untranslateX(target.x);
+      var tZ = untranslateZ(target.z);
 
       if (t % target.duration > target.duration / 2) {
         var tProg = ((t % target.duration) - (target.duration / 2)) / (target.duration / 2);
-        barrier.position.set(barrier.x * tProg + target.x * (1 - tProg), 0, barrier.z * tProg + target.z * (1 - tProg));
+        barrier.position.set(bX * tProg + tX * (1 - tProg), barrier.position.y, bZ * tProg + tZ * (1 - tProg));
       } else {
         var tProg = (t % target.duration) / (target.duration / 2);
-        barrier.position.set(target.x * tProg + barrier.x * (1 - tProg), 0, target.z * tProg + barrier.z * (1 - tProg));
+        barrier.position.set(tX * tProg + bX * (1 - tProg), barrier.position.y, tZ * tProg + bZ * (1 - tProg));
       }
     }
+  }
+}
+
+function updateBuoys() {
+  for (var ii = 0; ii < buoys.length; ii++) {
+    if (buoys[ii].movement) {
+      var buoy = buoys[ii];
+      var target = buoy.movement;
+      var bX = untranslateX(target.x0);
+      var bZ = untranslateX(target.z0);
+      var tX = untranslateX(target.x);
+      var tZ = untranslateZ(target.z);
+
+      if (t % target.duration > target.duration / 2) {
+        var tProg = ((t % target.duration) - (target.duration / 2)) / (target.duration / 2);
+        buoy.position.set(bX * tProg + tX * (1 - tProg), buoy.position.y, bZ * tProg + tZ * (1 - tProg));
+      } else {
+        var tProg = (t % target.duration) / (target.duration / 2);
+        buoy.position.set(tX * tProg + bX * (1 - tProg), buoy.position.y, tZ * tProg + bZ * (1 - tProg));
+      }
+    }
+  }
+}
+
+function rockBuoys(normals) {
+  for (var ii = 0; ii < buoys.length; ii++) {
+    var buoy = buoys[ii];
+    var fieldIndex = translate(buoy.position.x, buoy.position.z);
+    var buoyY = field[fieldIndex] - 10;
+    buoy.position.set(buoy.position.x, -10, buoy.position.z);
+
+    var buoyNormalX = normals[fieldIndex * 3];
+    var buoyNormalY = normals[fieldIndex * 3 + 1];
+    var buoyNormalZ = normals[fieldIndex * 3 + 2];
+    buoy.lookAt(new THREE.Vector3(10 * buoyNormalX, 25 * buoyNormalY - 100 + buoyY, 10 * buoyNormalZ));
+
+    checkBuoyStatus(buoy, ii, buoyY);
   }
 }
 
@@ -551,8 +803,9 @@ function animate() {
 
   requestAnimationFrame(animate);
 
-  // Update the barriers
+  // Update the barriers and buoys
   updateBarriers();
+  updateBuoys();
 
   if (touchDuration > 0) {
     var midX = Math.floor(touchCoordX * WIDTH);
@@ -598,20 +851,9 @@ function animate() {
   geometry.attributes.position.needsUpdate = true;
 
   // Make buoys rock
-  for (var ii = 0; ii < buoys.length; ii++) {
-    var buoy = buoys[ii];
-    var fieldIndex = translate(buoy.position.x, buoy.position.z);
-    var buoyY = field[fieldIndex] - 10;
-    buoy.position.set(buoy.position.x, -10, buoy.position.z);
+  rockBuoys(normals);
 
-    var buoyNormalX = normals[fieldIndex * 3];
-    var buoyNormalY = normals[fieldIndex * 3 + 1];
-    var buoyNormalZ = normals[fieldIndex * 3 + 2];
-    buoy.lookAt(new THREE.Vector3(10 * buoyNormalX, 25 * buoyNormalY - 100 + buoyY, 10 * buoyNormalZ));
-
-    checkBuoyStatus(buoy, ii, buoyY);
-  }
-
+  // Update the light source(s)
   updateLightSource();
 
   renderer.render(scene, camera);
