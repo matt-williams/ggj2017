@@ -51,6 +51,13 @@ var mouse = new THREE.Vector2();
 var barrierCheck = new THREE.Vector2();
 
 function updateTouchCoords(event) {
+  console.log("event.type: " + event.type);
+  console.log("event.clientX: " + event.clientX);
+  console.log("event.clientY: " + event.clientY);
+  console.log("event.pageX: " + event.pageX);
+  console.log("event.pageY: " + event.pageY);
+  console.log("event.screenX: " + event.screenX);
+  console.log("event.screenY: " + event.screenY);
   mouse.x = event.pageX / window.innerWidth * 2 - 1;
   mouse.y = 1 - event.pageY / window.innerHeight * 2;
   raycaster.setFromCamera(mouse, camera);
