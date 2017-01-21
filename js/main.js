@@ -261,11 +261,18 @@ function animate() {
     var buoy = buoys[ii];
     var fieldIndex = translate(buoy.position.x, buoy.position.z);
     var buoyY = field[fieldIndex] - 10;
-    buoy.position.set(buoy.position.x, buoyY, buoy.position.z);
+    buoy.position.set(buoy.position.x, -10, buoy.position.z);
     var buoyNormalX = normals[fieldIndex * 3];
     var buoyNormalY = normals[fieldIndex * 3 + 1];
     var buoyNormalZ = normals[fieldIndex * 3 + 2];
-    buoy.lookAt(new THREE.Vector3(10 * buoyNormalX, 25 * buoyNormalY - 110, 10 * buoyNormalZ));
+    buoy.lookAt(new THREE.Vector3(10 * buoyNormalX, 25 * buoyNormalY - 100 + buoyY, 10 * buoyNormalZ));
+
+    if (buoyY < -12) {
+      buoy.material.color.setHex(0x00ff00);
+    }
+    else if (buoyY > -9.5)  {
+      buoy.material.color.setHex(0xff0000);
+    }
   }
 
   if (pointLight != undefined) {
