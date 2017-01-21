@@ -176,7 +176,7 @@ function checkBuoyStatus(buoy, index, buoyY) {
 
   var buoyOnSensitivity = map.buoys[index].onSensitivity || -11;
   var buoyOffSensitivity = map.buoys[index].offSensitivity || -9.5;
-  console.log(index, buoyY, buoyOnSensitivity, buoysTickCount[index]);
+  //console.log(index, buoyY, buoyOnSensitivity, buoysTickCount[index]);
 
   if (buoyY < buoyOnSensitivity) {
     buoysTickCount[index]++;
