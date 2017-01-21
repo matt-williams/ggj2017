@@ -53,8 +53,12 @@ var barrierCheck = new THREE.Vector2();
 function updateTouchCoords(event) {
   mouse.x = event.clientX / window.innerWidth * 2 - 1;
   mouse.y = 1 - event.clientY / window.innerHeight * 2;
+  console.log("mouse.x: " + mouse.x);
+  console.log("mouse.y: " + mouse.y);
   raycaster.setFromCamera(mouse, camera);
   var intersects = raycaster.intersectObjects([simpleMesh]);
+  console.log("mouse: " + mouse);
+  console.log("intersects.length: " + intersects.length);
 
   if (intersects.length > 0) {
     touchCoordX = intersects[0].point.x / (WIDTH / 10) + 0.5;
