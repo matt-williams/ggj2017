@@ -106,6 +106,12 @@ function onDocumentTouchStop( event ) {
 function onDocumentKeyPress( event ) {
   if (event.which == 32) {
     console.log("space");
+    for (i in event) {
+      console.log(i, event[i]);
+    }
+    loadScene((currentScene + 1) % maps.length);
+  } else if ((event.which == 8) || (event.which == 179)) {
+    console.log("Amazon skip");
     loadScene((currentScene + 1) % maps.length);
   }
 }
@@ -1029,6 +1035,9 @@ function handleKeyboardTouches() {
       manualTouchDuration = Math.PI / WAVE_PERIOD_FACTOR;
     }
   }
+
+  cursorX = (cursorX > 0) ? ((cursorX < WIDTH) ? cursorX : WIDTH) : 0;
+  cursorY = (cursorY > 0) ? ((cursorY < HEIGHT) ? cursorY : HEIGHT) : 0;
 
   if (manualTouchDuration > 0) {
     handleTouch(cursorX, cursorY, true);
