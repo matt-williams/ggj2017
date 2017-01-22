@@ -823,7 +823,7 @@ function updateBarriers() {
       var barrier = barriers[ii];
       var target = barriersMovement[ii];
       var bX = untranslateX(target.x0);
-      var bZ = untranslateX(target.z0);
+      var bZ = untranslateZ(target.z0);
       var tX = untranslateX(target.x);
       var tZ = untranslateZ(target.z);
 
@@ -844,7 +844,7 @@ function updateBuoys() {
       var buoy = buoys[ii];
       var target = buoy.movement;
       var bX = untranslateX(target.x0);
-      var bZ = untranslateX(target.z0);
+      var bZ = untranslateZ(target.z0);
       var tX = untranslateX(target.x);
       var tZ = untranslateZ(target.z);
 

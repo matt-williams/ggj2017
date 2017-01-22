@@ -233,6 +233,9 @@ var maps = [
     ],
     portals: [
       {x: 120, z: 60, dx: 2, dz: 40, px: -40, pz: 0}
+    ],
+    untappables: [
+      {x: 50, z: 70, dx: 20, dz: 20}
     ]
   },
   {
@@ -284,6 +287,114 @@ var maps = [
     ],
     untappables: [
       {x: 40, z: 60, dx: 40, dz: 40}
+    ]
+  },
+  {
+    scene: 19,
+    size: {dx: 150, dz: 100},
+    barriers: [
+      {x: 0, z: 0, dx: 150, dz: 10},
+      {x: 0, z: 10, dx: 10, dz: 40},
+      {x: 45, z: 10, dx: 10, dz: 40},
+      {x: 95, z: 10, dx: 10, dz: 40},
+      {x: 140, z: 10, dx: 10, dz: 40},
+      {x: 0, z: 50, dx: 70, dz: 10, movement: {x: 115, z: 55, duration: 350}}
+    ],
+    buoys: [
+      {x: 25, z: 25},
+      {x: 75, z: 25},
+      {x: 125, z: 25}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 150, dz: 50}
+    ]
+  },
+  {
+    scene: 20,
+    size: {dx: 150, dz: 100},
+    barriers: [
+      {x: 0, z: 0, dx: 150, dz: 10},
+      {x: 0, z: 10, dx: 10, dz: 40},
+      {x: 45, z: 10, dx: 10, dz: 40},
+      {x: 95, z: 10, dx: 10, dz: 40},
+      {x: 140, z: 10, dx: 10, dz: 40},
+      {x: 0, z: 50, dx: 150, dz: 10}
+    ],
+    buoys: [
+      {x: 25, z: 25, movement: {x: 25, z: 75, duration: 600}},
+      {x: 75, z: 25, movement: {x: 75, z: 75, duration: 1500}},
+      {x: 125, z: 25, movement: {x: 125, z: 75, duration: 1000}}
+    ]
+  },
+  {
+    scene: 21,
+    size: {dx: 200, dz: 50},
+    buoys: [
+      {x: 175, z: 25}
+    ],
+    collectors: [
+      {x: 50, z: 0, dx: 2, dz: 50, capacity: 20, yield: -1.8},
+      {x: 100, z: 0, dx: 2, dz: 50, capacity: 20, yield: -1.8},
+      {x: 150, z: 0, dx: 2, dz: 50, capacity: 20, yield: -1.8}
+    ],
+    untappables: [
+      {x: 50, z: 0, dx: 150, dz: 50}
+    ]
+  },
+  {
+    scene: 22,
+    size: {dx: 150, dz: 100},
+    barriers: [
+      {x: 0, z: 0, dx: 150, dz: 10},
+      {x: 0, z: 10, dx: 10, dz: 40},
+      {x: 45, z: 10, dx: 10, dz: 40},
+      {x: 95, z: 10, dx: 10, dz: 40},
+      {x: 140, z: 10, dx: 10, dz: 40},
+      {x: 0, z: 50, dx: 50, dz: 10, gate: 2},
+      {x: 50, z: 50, dx: 50, dz: 10, gate: 1},
+      {x: 100, z: 50, dx: 50, dz: 10, gate: 0}
+    ],
+    buoys: [
+      {x: 75, z: 25}
+    ],
+    gates: [
+      {x: 25, z: 25},
+      {x: 125, z: 25},
+      {x: 125, z: 75}
+    ]
+  },
+  {
+    scene: 23,
+    size: {dx: 200, dz: 200},
+    barriers: [
+      {x: 0, z: 0, dx: 200, dz: 20},
+      {x: 0, z: 20, dx: 20, dz: 70},
+      {x: 60, z: 20, dx: 20, dz: 70},
+      {x: 120, z: 20, dx: 20, dz: 70},
+      {x: 180, z: 20, dx: 20, dz: 70},
+      {x: 0, z: 90, dx: 200, dz: 20},
+      {x: 0, z: 110, dx: 20, dz: 70},
+      {x: 60, z: 110, dx: 20, dz: 70},
+      {x: 120, z: 110, dx: 20, dz: 70},
+      {x: 180, z: 110, dx: 20, dz: 70},
+      {x: 0, z: 180, dx: 200, dz: 20}
+    ],
+    buoys: [
+      {x: 40, z: 130}
+    ],
+    portals: [
+      {x: 20, z: 179, dx: 40, dz: 2, px: 60, pz: -90},
+      {x: 80, z: 19, dx: 40, dz: 2, px: 60, pz: 70},
+      {x: 140, z: 19, dx: 40, dz: 2, px: 0, pz: 90},
+      {x: 140, z: 179, dx: 40, dz: 2, px: -60, pz: 0},
+      {x: 80, z: 109, dx: 40, dz: 2, px: -60, pz: -20}
+    ],
+    untappables: [
+      {x: 20, z: 110, dx: 40, dz: 70},
+      {x: 80, z: 20, dx: 40, dz: 70},
+      {x: 80, z: 110, dx: 40, dz: 70},
+      {x: 140, z: 20, dx: 40, dz: 70},
+      {x: 140, z: 110, dx: 40, dz: 70}
     ]
   }
 ]
