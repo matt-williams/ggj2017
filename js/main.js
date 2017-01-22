@@ -325,12 +325,33 @@ function loadPortals() {
 
   for (var ii = 0; ii < map.portals.length; ii++) {
     var portal = map.portals[ii];
-    var dx2 = portal.dx / 2;
-    var dz2 = portal.dz / 2;
-    var midX = portal.x + portal.px + dx2;
-    var midZ = portal.z + portal.pz + dz2;
+    var dx2, dz2, midX, midZ;
+    var midX, midZ;
+
+    if (portal.invert) {
+      dx2 = portal.dz / 2;
+      dz2 = portal.dx / 2;
+    } else {
+      dx2 = portal.dx / 2;
+      dz2 = portal.dz / 2;
+    }
+
+    if (typeof portal.px !== 'undefined') {
+      midX = portal.x + portal.px + dx2;
+      midZ = portal.z + portal.pz + dz2;
+    } else {
+      midX = portal.ax + dx2;
+      midZ = portal.az + dz2;
+    }
+
     var portalMesh = new THREE.Mesh(portalGeometry, portalMaterial);
-    portalMesh.scale.set(portal.dx / 10, 2, portal.dz / 10);
+
+    if (portal.invert) {
+      portalMesh.scale.set(portal.dz / 10, 2, portal.dx / 10);
+    } else {
+      portalMesh.scale.set(portal.dx / 10, 2, portal.dz / 10);
+    }
+
     portalMesh.position.set(midX / 10 - (WORLD_WIDTH / 2), -10, midZ / 10 - (WORLD_HEIGHT / 2));
     scene.add(portalMesh);
   }
@@ -721,6 +742,39 @@ function updateCollector(collector, velocity, currentField) {
   return false;
 }
 
+// Utility functions for common average calculations
+function portalAverageDenominator(portal, x, z) {
+  var xP, zP, indexP;
+
+  if (typeof portal.px !== 'undefined') {
+    xP = x + portal.px;
+    zP = z + portal.pz;
+  } else {
+    if (portal.invert) {
+      xP = x + (portal.ax - portal.z);
+      zP = z + (portal.az - portal.x);
+    } else {
+      xP = x + (portal.ax - portal.x);
+      zP = z + (portal.az - portal.z);
+    }
+  }
+
+  if (portal.invert) {
+    indexP = zP + (xP * WIDTH);
+  } else {
+    indexP = xP + (zP * WIDTH);
+  }
+
+  var average = 0;
+  var denominator = 0;
+  if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
+  if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
+  if (indexP > 0) { average += field[indexP - 1]; denominator++; }
+  if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+
+  return [average, denominator];
+}
+
 // Function to handle updating the field of vertices
 function updateField() {
   var newField = fields[1];
@@ -737,11 +791,9 @@ function updateField() {
         var portal = isPortal(x, z);
 
         if (portal) {
-          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
-          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
-          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
-          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
-          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+          var avDenom = portalAverageDenominator(portal, x, z);
+          average = avDenom[0];
+          denominator = avDenom[1];
         } else {
           if (z > 0) { average += field[index - WIDTH]; denominator++; }
           if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
@@ -780,11 +832,9 @@ function updateField() {
         var portal = isPortal(x, z);
 
         if (portal) {
-          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
-          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
-          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
-          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
-          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+          var avDenom = portalAverageDenominator(portal, x, z);
+          average = avDenom[0];
+          denominator = avDenom[1];
         } else {
           if (z > 0) { average += field[index - WIDTH]; denominator++; }
           if (z < HEIGHT - 1) { average += field[index + WIDTH]; denominator++; }
@@ -822,12 +872,8 @@ function updateField() {
         var portal = isPortal(x, z);
 
         if (portal) {
-          var indexP = (x + portal.px) + ((z + portal.pz) * WIDTH);
-          if (indexP - WIDTH >= 0) { average += field[indexP - WIDTH]; denominator++; }
-          if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
-          if (indexP > 0) { average += field[indexP - 1]; denominator++; }
-          if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
-          average /= 1;
+          var avDenom = portalAverageDenominator(portal, x, z);
+          average = avDenom[0];
         } else {
           average += (field[index - 1] + field[index + 1] + field[index - WIDTH] + field[index + WIDTH]) / 4;
         }

@@ -396,5 +396,18 @@ var maps = [
       {x: 140, z: 20, dx: 40, dz: 70},
       {x: 140, z: 110, dx: 40, dz: 70}
     ]
+  },
+  {
+    scene: 24,
+    size: {dx: 200, dz: 200},
+    buoys: [
+      {x: 60, z: 80}
+    ],
+    portals: [
+      {x: 10, z: 100, dx: 2, dz: 40, ax: 100, az: 10, invert: true}
+    ],
+    untappables: [
+      {x: 50, z: 70, dx: 20, dz: 20}
+    ]
   }
 ]
