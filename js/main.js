@@ -34,6 +34,15 @@ var touchCoordY = 0;
 var touchDuration = 0;
 var touched = false;
 
+var enterDown = false;
+var leftDown = false;
+var rightDown = false;
+var upDown = false;
+var downDown = false;
+var cursorX = 0;
+var cursorY = 0;
+var manualTouchDuration = 0;
+
 var DAY_PERIOD = 24 * 60;
 
 var SOUND_PATH = "https://raw.githubusercontent.com/matt-williams/ggj2017/master/sounds/"
@@ -98,6 +107,35 @@ function onDocumentKeyPress( event ) {
   if (event.which == 32) {
     console.log("space");
     loadScene((currentScene + 1) % maps.length);
+  }
+}
+
+function onDocumentKeyDown( event ) {
+  if (event.which == 13) {
+    console.log("enter");
+    enterDown = true;
+  } else if (event.which == 37) {
+    leftDown = true;
+  } else if (event.which == 38) {
+    upDown = true;
+  } else if (event.which == 39) {
+    rightDown = true;
+  } else if (event.which == 40) {
+    downDown = true;
+  }
+}
+
+function onDocumentKeyUp( event ) {
+  if (event.which == 13) {
+    enterDown = false;
+  } else if (event.which == 37) {
+    leftDown = false;
+  } else if (event.which == 38) {
+    upDown = false;
+  } else if (event.which == 39) {
+    rightDown = false;
+  } else if (event.which == 40) {
+    downDown = false;
   }
 }
 
@@ -546,6 +584,8 @@ function init() {
   document.addEventListener("mousemove", onDocumentTouchMove, false);
   document.addEventListener("mouseup", onDocumentTouchStop, false);
   document.addEventListener("keypress", onDocumentKeyPress, false);
+  document.addEventListener("keydown", onDocumentKeyDown, false);
+  document.addEventListener("keyup", onDocumentKeyUp, false);
   document.addEventListener("touchstart", onDocumentTouchStart, false);
   document.addEventListener("touchmove", onDocumentTouchMove, false);
   document.addEventListener("touchend", onDocumentTouchStop, false);
@@ -581,6 +621,9 @@ function loadScene(sceneNumber) {
   fields = [new Float64Array(WIDTH * HEIGHT), new Float64Array(WIDTH * HEIGHT)];
   field = fields[0];
 
+  cursorX = WIDTH / 2;
+  cursorY = HEIGHT / 2;
+
   geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, WIDTH - 1, HEIGHT - 1);
   geometry.rotateX(-Math.PI / 2);
 
@@ -607,6 +650,7 @@ function loadScene(sceneNumber) {
   currentScene = sceneNumber;
   touched = false;
   touchDuration = 0;
+  manualTouchDuration = 0;
   paused = false;
 }
 
@@ -637,9 +681,15 @@ function untranslateZ(z) {
 }
 
 // Utility function to handle touches, which may come from the mouse or remote sources
-function handleTouch(touchX, touchZ) {
+function handleTouch(touchX, touchZ, manual) {
   if (isTappable(touchX, touchZ)) {
-    var cosT = Math.cos(touchDuration * WAVE_PERIOD_FACTOR);
+    var cosT;
+
+    if (manual) {
+      cosT = Math.cos(manualTouchDuration * WAVE_PERIOD_FACTOR);
+    } else {
+      cosT = Math.cos(touchDuration * WAVE_PERIOD_FACTOR);
+    }
 
     for (var z = -WAVE_GAUSSIAN_RADIUS; z <= WAVE_GAUSSIAN_RADIUS; z++) {
       for (var x = -WAVE_GAUSSIAN_RADIUS; x <= WAVE_GAUSSIAN_RADIUS; x++) {
@@ -777,6 +827,7 @@ function updateField() {
           if (indexP + WIDTH < WIDTH * HEIGHT) { average += field[indexP + WIDTH]; denominator++; }
           if (indexP > 0) { average += field[indexP - 1]; denominator++; }
           if (indexP < WIDTH * HEIGHT - 1) { average += field[indexP + 1]; denominator++; }
+          average /= 1;
         } else {
           average += (field[index - 1] + field[index + 1] + field[index - WIDTH] + field[index + WIDTH]) / 4;
         }
@@ -893,6 +944,52 @@ function rockGates(normals) {
   }
 }
 
+// Handle keyboard touches
+function handleKeyboardTouches() {
+  if (enterDown) {
+    if (manualTouchDuration <= 0) {
+      manualTouchDuration = Math.PI / WAVE_PERIOD_FACTOR;
+    }
+  }
+
+  if (leftDown) {
+    cursorX--;
+
+    if (enterDown) {
+      manualTouchDuration = Math.PI / WAVE_PERIOD_FACTOR;
+    }
+  }
+
+  if (rightDown) {
+    cursorX++;
+
+    if (enterDown) {
+      manualTouchDuration = Math.PI / WAVE_PERIOD_FACTOR;
+    }
+  }
+
+  if (upDown) {
+    cursorY--;
+
+    if (enterDown) {
+      manualTouchDuration = Math.PI / WAVE_PERIOD_FACTOR;
+    }
+  }
+
+  if (downDown) {
+    cursorY++;
+
+    if (enterDown) {
+      manualTouchDuration = Math.PI / WAVE_PERIOD_FACTOR;
+    }
+  }
+
+  if (manualTouchDuration > 0) {
+    handleTouch(cursorX, cursorY, true);
+    manualTouchDuration--;
+  }
+}
+
 // Animate a frame
 function animate() {
   if (paused) {
@@ -905,6 +1002,7 @@ function animate() {
   updateBarriers();
   updateBuoys();
 
+  // Handle touches
   if (touchDuration > 0) {
     var midX = Math.floor(touchCoordX * WIDTH);
     var midZ = Math.floor(touchCoordY * HEIGHT);
@@ -912,6 +1010,9 @@ function animate() {
     touchDuration--;
   }
 
+  handleKeyboardTouches();
+
+  // Adjust timers
   swipeDuration--;
 
   for (var index = 0; index < bellDurations.length; index++) {
