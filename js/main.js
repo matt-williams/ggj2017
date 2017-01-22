@@ -183,11 +183,11 @@ function isBarrier(x, z) {
   for (var ii = 0; ii < map.barriers.length; ii++) {
     var barrier = map.barriers[ii];
 
-    if (!barriers[ii].visible) {
+    if ((!barriers[ii].visible) || (barriers[ii].phantom)) {
       continue;
     }
 
-    if (barrier.rotation) {
+    if ((barrier.rotation) || (barrier.rotating)) {
       var amX = x - barrier.aX;
       var amZ = z - barrier.aZ;
       var abX = barrier.bX - barrier.aX;
@@ -300,6 +300,7 @@ function loadBarriers() {
 
     barriers[ii] = barrierMesh;
     barriers[ii].gate = barrier.gate;
+    barriers[ii].phantom = barrier.phantom;
     barriersMovement[ii] = barrier.movement;
 
     if (barriersMovement[ii]) {
@@ -1020,6 +1021,28 @@ function updateBarriers() {
         var tProg = (t % target.duration) / (target.duration / 2);
         barrier.position.set(tX * tProg + bX * (1 - tProg), barrier.position.y, tZ * tProg + bZ * (1 - tProg));
       }
+    }
+
+    if (map.barriers[ii].rotating) {
+      var barrier = barriers[ii];
+      var mapBarrier = map.barriers[ii];
+      barrier.rotateY(mapBarrier.rotating);
+
+      var dx2 = mapBarrier.dx / 2;
+      var dz2 = mapBarrier.dz / 2;
+      var midX = mapBarrier.x + dx2;
+      var midZ = mapBarrier.z + dz2;
+
+      var cosR = -Math.cos(barrier.rotation.y);
+      var sinR = -Math.sin(barrier.rotation.y);
+      mapBarrier.aX = midX - dx2 * cosR - dz2 * sinR;
+      mapBarrier.bX = midX + dx2 * cosR - dz2 * sinR;
+      //mapBarrier.cX = midX + dx2 * cosR + dz2 * sinR;
+      mapBarrier.dX = midX - dx2 * cosR + dz2 * sinR;
+      mapBarrier.aZ = midZ + dx2 * sinR - dz2 * cosR;
+      mapBarrier.bZ = midZ - dx2 * sinR - dz2 * cosR;
+      //mapBarrier.cZ = midZ - dx2 * sinR + dz2 * cosR;
+      mapBarrier.dZ = midZ + dx2 * sinR + dz2 * cosR;
     }
   }
 }

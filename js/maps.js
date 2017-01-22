@@ -415,5 +415,52 @@ var maps = [
     untappables: [
       {x: 50, z: 70, dx: 20, dz: 20}
     ]
+  },
+  {
+    scene: 25,
+    size: {dx: 200, dz: 200},
+    buoys: [
+      {x: 100, z: 40}
+    ],
+    barriers: [
+      {x: 0, z: 80, dx: 80, dz: 40},
+      {x: 80, z: 80, dx: 40, dz: 40, phantom: true},
+      {x: 120, z: 80, dx: 80, dz: 40}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 200, dz: 120}
+    ]
+  },
+  {
+    scene: 26,
+    size: {dx: 200, dz: 200},
+    buoys: [
+      {x: 100, z: 30}
+    ],
+    barriers: [
+      {x: 0, z: 60, dx: 200, dz: 80, phantom: true},
+      {x: 0, z: 60, dx: 150, dz: 20, movement: {x: 125, z: 70, duration: 600}},
+      {x: 50, z: 120, dx: 150, dz: 20, movement: {x: 75, z: 130, duration: 600}}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 200, dz: 140}
+    ]
+  },
+  {
+    scene: 27,
+    size: {dx: 200, dz: 200},
+    buoys: [
+      {x: 20, z: 20}
+    ],
+    barriers: [
+      {x: 0, z: 40, dx: 200, dz: 120, phantom: true},
+      {x: 40, z: 40, dx: 120, dz: 40},
+      {x: 40, z: 120, dx: 120, dz: 40},
+      {x: -20 * Math.sqrt(2), z: 120 - 20 * Math.sqrt(2), dx: 40 * Math.sqrt(2), dz: 40 * Math.sqrt(2), rotation: Math.PI / 4},
+      {x: 200 - 20 * Math.sqrt(2), z: 80 - 20 * Math.sqrt(2), dx: 40 * Math.sqrt(2), dz: 40 * Math.sqrt(2), rotation: Math.PI / 4}
+    ],
+    untappables: [
+      {x: 0, z: 0, dx: 200, dz: 160, onSensitivity: -10.5}
+    ]
   }
 ]
