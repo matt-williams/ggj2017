@@ -35,10 +35,6 @@ var touchDuration = 0;
 var touched = false;
 
 var DAY_PERIOD = 24 * 60;
-var date = new Date;
-date.getTime(Date.getTime);
-var time = date.getHours() * 60 + date.getMinutes();
-console.log(date, date.getHours(), date.getMinutes(), time, DAY_PERIOD);
 
 var SOUND_PATH = "https://raw.githubusercontent.com/matt-williams/ggj2017/master/sounds/"
 var dropSound = null;
@@ -605,6 +601,9 @@ function loadScene(sceneNumber) {
   loadBuoys();
   loadGates();
 
+  // Update the light source(s)
+  updateLightSource();
+
   currentScene = sceneNumber;
   touched = false;
   touchDuration = 0;
@@ -808,6 +807,9 @@ function updateField() {
 
 function updateLightSource() {
   if (pointLightSun != undefined) {
+    var date = new Date;
+    date.getTime(Date.getTime);
+    var time = date.getHours() * 60 + date.getMinutes();
     var linearPeriodFactor = (200 * time) / DAY_PERIOD;
     var wavePeriodFactor = time * 2 * Math.PI / DAY_PERIOD
     var cosP = Math.cos(wavePeriodFactor);
@@ -949,9 +951,6 @@ function animate() {
   // Make buoys and gates rock
   rockBuoys(normals);
   rockGates(normals);
-
-  // Update the light source(s)
-  updateLightSource();
 
   renderer.render(scene, camera);
 }
