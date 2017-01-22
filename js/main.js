@@ -8,7 +8,7 @@ var transitioning = false;
 
 var t = 0;
 var map;
-var currentScene;
+var currentScene = 0;
 var WIDTH, HEIGHT;
 var WORLD_WIDTH, WORLD_HEIGHT;
 var DAMPING = 0.995;
@@ -42,6 +42,9 @@ var downDown = false;
 var cursorX = 0;
 var cursorY = 0;
 var manualTouchDuration = 0;
+var twoPlayer = false;
+var currentScene2 = 0;
+var player2;
 
 var DAY_PERIOD = 24 * 60;
 
@@ -51,6 +54,9 @@ var swipeSound = null;
 var swipeDuration = 0;
 var bellSound = null;
 var context;
+
+var text;
+var started = false;
 
 // Use a Raycaster to work out where a mouse event's coordinates relates to in world space
 var raycaster = new THREE.Raycaster();
@@ -90,7 +96,11 @@ function updateTouchCoords(event) {
 
 // Event handlers
 function onDocumentTouchStart( event ) {
-  touched = updateTouchCoords(event) || touched;
+  if (!started) {
+    start();
+  } else {
+    touched = updateTouchCoords(event) || touched;
+  }
 }
 
 function onDocumentTouchMove( event ) {
@@ -104,15 +114,34 @@ function onDocumentTouchStop( event ) {
 }
 
 function onDocumentKeyPress( event ) {
-  if (event.which == 32) {
-    console.log("space");
-    for (i in event) {
-      console.log(i, event[i]);
+  if (!started) {
+    start();
+  } else {
+    if (event.which == 32) {
+      console.log("space");
+      if (twoPlayer) {
+        loadScene((currentScene2 + 1) % maps2.length);
+      } else {
+        loadScene((currentScene + 1) % maps.length);
+      }
+    } else if ((event.which == 8) || (event.which == 179)) {
+      console.log("Amazon skip");
+
+      if (twoPlayer) {
+        loadScene((currentScene2 + 1) % maps2.length);
+      } else {
+        loadScene((currentScene + 1) % maps.length);
+      }
+    } else if (event.which == 50) {
+      console.log(twoPlayer, currentScene, currentScene2, maps, maps2);
+      if (twoPlayer) {
+        twoPlayer = false;
+        loadScene(currentScene);
+      } else {
+        twoPlayer = true;
+        loadScene(currentScene2);
+      }
     }
-    loadScene((currentScene + 1) % maps.length);
-  } else if ((event.which == 8) || (event.which == 179)) {
-    console.log("Amazon skip");
-    loadScene((currentScene + 1) % maps.length);
   }
 }
 
@@ -482,7 +511,12 @@ function checkBuoyStatus(buoy, index, buoyY) {
 
       if (success()) {
         transitioning = true;
-        setTimeout(function() {loadScene((currentScene + 1) % maps.length);}, 500);
+
+        if (twoPlayer) {
+          setTimeout(function() {loadScene((currentScene2 + 1) % maps2.length);}, 500);
+        } else {
+          setTimeout(function() {loadScene((currentScene + 1) % maps.length);}, 500);
+        }
       }
     } else {
       buoy.material.color.setHex(0xffff00);
@@ -581,10 +615,15 @@ function playSound(buffer) {
   }
 }
 
-// Initialize, load and animate the first scene
 init();
-loadScene(0);
-animate();
+
+// Initialize, load and animate the first scene
+function start() {
+  started = true;
+  document.body.removeChild(text);
+  loadScene(0);
+  animate();
+}
 
 // Initialize aspects of the game that persist across scenes
 function init() {
@@ -628,6 +667,30 @@ function init() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   }, false);
+
+  text = document.createElement('div');
+  text.style.position = 'absolute';
+  text.style.width = 100;
+  text.style.height = 100;
+  text.style.color = "lightblue";
+  text.style.textAlign = "justify";
+  text.innerHTML = "<h1>Buoys Will Be Buoys</h1>" +
+                   "<h2>Global Game Jame 2016 (Waves)</h2>" +
+                   "<br><br>" +
+                   "Tap or drag to make waves in the water, and try to expose (red) buoys, making them green.<br>" +
+                   "Sometimes shields hinder your tapping, and other times obstacles obstruct the waves.<br>" +
+                   "Later levels introduce other challenges you'll just have to see for yourselves.<br>" + 
+                   "<br>" + 
+                   "You'll need to consider interference, resonance, reflection, diffraction and more to succeed.<br>" +
+                   "<br><br><br>" +
+                   "Press space if you struggle with a level to skip it (but try to solve it again later).<br>" +
+                   "<br>" + 
+                   "Press 2 to toggle between 1- and 2- player, with the second player using the arrow keys and Enter.<br>" +
+                   "<br><br><br>" +
+                   "<h2>Click with the mouse or press any key to start<h2>";
+  text.style.left = 100 + 'px';
+  text.style.top = 50 + 'px';
+  document.body.appendChild(text);
 }
 
 // Function to load scenes
@@ -635,7 +698,12 @@ function loadScene(sceneNumber) {
   paused = true;
   transitioning = false;
   scene = new THREE.Scene();
-  map = maps[sceneNumber];
+
+  if (twoPlayer) {
+    map = maps2[sceneNumber];
+  } else {
+    map = maps[sceneNumber];
+  }
 
   scene.add(pointLightSun);
   scene.add(pointLightMoon);
@@ -650,6 +718,14 @@ function loadScene(sceneNumber) {
 
   cursorX = WIDTH / 2;
   cursorY = HEIGHT / 2;
+
+  if (twoPlayer) {
+    var cursorGeometry = new THREE.ConeBufferGeometry(0.125, 1.25, 100);
+    var cursorMaterial = new THREE.MeshPhongMaterial({color: 0xffffff, shininess: 0});
+    player2 = new THREE.Mesh(cursorGeometry, cursorMaterial);
+    player2.position.set(0, -5, 0);
+    scene.add(player2);
+  }
 
   geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT, WIDTH - 1, HEIGHT - 1);
   geometry.rotateX(-Math.PI / 2);
@@ -674,7 +750,12 @@ function loadScene(sceneNumber) {
   // Update the light source(s)
   updateLightSource();
 
-  currentScene = sceneNumber;
+  if (twoPlayer) {
+    currentScene2 = sceneNumber;
+  } else {
+    currentScene = sceneNumber;
+  }
+
   touched = false;
   touchDuration = 0;
   manualTouchDuration = 0;
@@ -1038,6 +1119,11 @@ function handleKeyboardTouches() {
 
   cursorX = (cursorX > 0) ? ((cursorX < WIDTH) ? cursorX : WIDTH) : 0;
   cursorY = (cursorY > 0) ? ((cursorY < HEIGHT) ? cursorY : HEIGHT) : 0;
+
+  if (twoPlayer) {
+    player2.position.x = untranslateX(cursorX);
+    player2.position.z = untranslateZ(cursorY);
+  }
 
   if (manualTouchDuration > 0) {
     handleTouch(cursorX, cursorY, true);
